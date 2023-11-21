@@ -22,6 +22,7 @@ public class BootCompositeDeployment
 	 * Designation for shards.
 	 */
 	public static final String	FUNCTIONALITY	= "TESTING";
+
 	/**
 	 * Different designation for shards.
 	 */
@@ -29,7 +30,7 @@ public class BootCompositeDeployment
 	
 	/**
 	 * Performs test
-	 * 
+	 * S
 	 * @param args_
 	 *                 - not used.
 	 */

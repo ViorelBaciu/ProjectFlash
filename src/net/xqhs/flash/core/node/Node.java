@@ -11,18 +11,18 @@
  ******************************************************************************/
 package net.xqhs.flash.core.node;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.rmi.AlreadyBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.RemoteObject;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.*;
 
+import net.xqhs.flash.core.node.notification.ClientCallbackInterface;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -62,7 +62,7 @@ import net.xqhs.util.logging.Unit;
  * 
  * @author Andrei Olaru
  */
-public class Node extends Unit implements Entity<Node> {
+public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , Serializable {
 	/**
 	 * Proxy for a {@link Node}.
 	 */
@@ -155,7 +155,21 @@ public class Node extends Unit implements Entity<Node> {
 	 */
 	private PylonProxy						nodePylonProxy;
 	protected String						serverURI					= null;					// FIXME: Remove this
-	
+
+	///\ Changes
+
+	private static Node instance;
+	private Map<String, String> agentMap;  // Map to store agents and their shards
+	private List<ClientCallbackInterface> callbacks;  // List to store client callbacks
+
+	public static synchronized Node getInstance() throws RemoteException {
+		if (instance == null) {
+			instance = new Node();
+		}
+		return instance;
+	}
+	///\
+
 	/**
 	 * Creates a new {@link Node} instance.
 	 * 
@@ -173,7 +187,15 @@ public class Node extends Unit implements Entity<Node> {
 		setUnitName(EntityIndex.register(CategoryName.NODE.s(), this)).lock();
 		li("Active entitites:", activeEntities);
 	}
-	
+	///\ Add code
+	public Node() throws RemoteException {
+		super();
+		agentMap = new HashMap<>();  // Initialize the map
+		callbacks = new ArrayList<>();  // Initialize the callback list
+
+	}
+	///\ Add code
+
 	/**
 	 * Method used to register entities added in the context of this node.
 	 * 
@@ -224,7 +246,80 @@ public class Node extends Unit implements Entity<Node> {
 		});
 		return sendMessage(DeploymentConfiguration.CENTRAL_MONITORING_ENTITY_NAME, entities.toString());
 	}
-	
+
+
+	///\ Adding code for the implementation of RMI Server
+	@Override
+	public void addAgent(String agentName, String shardName) throws RemoteException {
+		agentMap.put(agentName, shardName);
+		// Logic to add the agent to the specified shard would go here.
+		System.out.println("Adding agent " + agentName + " to shard " + shardName);
+		notifyClients(agentName);  // Notify all registered clients
+
+	}
+
+	@Override
+	public synchronized void registerCallback(ClientCallbackInterface callback) throws RemoteException {
+		callbacks.add(callback);
+	}
+
+	@Override
+	public synchronized void unregisterCallback(ClientCallbackInterface callback) throws RemoteException {
+		callbacks.remove(callback);
+	}
+
+	private void notifyClients(String agentName) throws RemoteException {
+		for (ClientCallbackInterface callback : callbacks) {
+			try {
+				callback.notifyAgentAdded(agentName);
+			} catch (RemoteException e) {
+				System.err.println("Failed to notify client: " + e.getMessage());
+			}
+		}
+	}
+
+	@Override
+	public Map<String, String> getAgentMap() throws RemoteException {  // Return the map of agents
+		return agentMap;
+	}
+
+	///\ Adding code for the implementation of RMI Server
+
+	public void startServer() {
+//		try {
+//			// Create and export the remote object
+////			Node stub = new Node();
+//
+//			Node stub = (Node) UnicastRemoteObject.exportObject(this, 1099);
+//			//It was modified - // Bind the remote object's stub in the registry
+//			Registry registry = LocateRegistry.createRegistry(1099); //Start rmiregistry programmatically on port 1099
+//			registry.bind("Node",  stub);
+//
+//			System.out.println("Node server started");
+//		} catch (RemoteException | AlreadyBoundException e) {
+//			e.printStackTrace();
+//		}
+
+
+		try {
+			// Creează și exportă obiectul remote
+			Node node = Node.getInstance();
+//			Node node = new Node();
+
+			// Înregistrează obiectul remote în RMI registry
+			Registry registry = LocateRegistry.createRegistry(1099);
+			registry.rebind("Node", node);
+
+			System.out.println("Node server started");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	///\ until here
+
+
+
 	@Override
 	public boolean start() {
 		li("Starting node [] with entities [].", name, entityOrder);

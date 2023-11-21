@@ -11,6 +11,7 @@
  ******************************************************************************/
 package net.xqhs.flash.core.node;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +42,7 @@ import net.xqhs.util.logging.Unit;
  * 
  * @author Andrei Olaru
  */
-public class NodeLoader extends Unit implements Loader<Node> {
+public class NodeLoader extends Unit implements Loader<Node>, Serializable {
 	{
 		// sets logging parameters: the name of the log and the type (which is given by the current platform)
 		setUnitName("boot");
@@ -56,46 +57,56 @@ public class NodeLoader extends Unit implements Loader<Node> {
 	 *            - the arguments received by the program.
 	 * @return the {@link List} of {@link Node} instances that were loaded.
 	 */
+
+	///\ - loadDeployment() has been modified
+
 	public List<Node> loadDeployment(List<String> args) {
 		lf("Booting Flash-MAS.");
-		
+
 		// load settings & scenario
 		DeploymentConfiguration deploymentConfiguration = null;
 		try {
 			deploymentConfiguration = new DeploymentConfiguration().loadConfiguration(args, true, null);
 			lf("Configuration loaded");
-		} catch(ConfigLockedException e) {
+		} catch (ConfigLockedException e) {
 			le("settings were locked (shouldn't ever happen): " + PlatformUtils.printException(e));
 			return null;
 		}
-		
+
 		List<Node> nodes = new LinkedList<>();
 		List<MultiTreeMap> allEntities = deploymentConfiguration.getEntityList();
 		List<MultiTreeMap> nodesTrees = DeploymentConfiguration.filterCategoryInContext(allEntities,
 				CategoryName.NODE.s(), null);
-		if(nodesTrees == null || nodesTrees.isEmpty()) { // the DeploymentConfiguration should have created at least an
-															// empty node.
+		if (nodesTrees == null || nodesTrees.isEmpty()) {
 			le("No nodes present in the configuration.");
 			return null;
 		}
-		for(MultiTreeMap nodeConfig : nodesTrees) {
+
+		for (MultiTreeMap nodeConfig : nodesTrees) {
 			lf("Loading node ", EntityIndex.mockPrint(CategoryName.NODE.s(),
 					nodeConfig.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME)));
 			Node node = loadNode(nodeConfig, DeploymentConfiguration.filterContext(allEntities,
-					nodeConfig.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE)),
+							nodeConfig.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE)),
 					DeploymentConfiguration.filterCategoryInContext(allEntities, CategoryName.DEPLOYMENT.s(), null)
 							.get(0).getAValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE));
-			if(node != null) {
+			if (node != null) {
 				nodes.add(node);
 				lf("node loaded: []", node.getName());
-			}
-			else
+
+				// Start the server now that the node is loaded
+				node.startServer();
+
+				// Start node functionality
+				node.start();
+			} else {
 				le("node not loaded.");
+			}
 		}
 		lf("[] nodes loaded.", Integer.valueOf(nodes.size()));
 		doExit();
 		return nodes;
 	}
+	///\ - loadDeployment() has been modified
 	
 	@Override
 	public Node load(MultiTreeMap configuration) {
