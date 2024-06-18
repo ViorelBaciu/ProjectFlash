@@ -88,7 +88,6 @@ public class ClientApp  extends UnicastRemoteObject implements ClientCallbackInt
                 } else {
                     System.out.println("Unknown command. Valid commands: add -agent AgentName -shard ShardName, exit");
                 }
-                // need to add more commands as needed
             }
 
             scanner.close();

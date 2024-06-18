@@ -13,13 +13,11 @@ package net.xqhs.flash.core.node;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.rmi.AlreadyBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.RemoteObject;
-import java.rmi.server.UnicastRemoteObject;
+
 import java.util.*;
 
 import net.xqhs.flash.core.node.notification.ClientCallbackInterface;
@@ -299,22 +297,31 @@ public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , 
 //		} catch (RemoteException | AlreadyBoundException e) {
 //			e.printStackTrace();
 //		}
-
-
 		try {
-			// Creează și exportă obiectul remote
 			Node node = Node.getInstance();
-//			Node node = new Node();
-
-			// Înregistrează obiectul remote în RMI registry
 			Registry registry = LocateRegistry.createRegistry(1099);
 			registry.rebind("Node", node);
-
 			System.out.println("Node server started");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
+
+
+//		try {
+//			// Creează și exportă obiectul remote
+//			Node node = Node.getInstance();
+////			Node node = new Node();
+//
+//			// Înregistrează obiectul remote în RMI registry
+//			Registry registry = LocateRegistry.createRegistry(1099);
+//			registry.rebind("Node", node);
+//
+//			System.out.println("Node server started");
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+
 
 	///\ until here
 

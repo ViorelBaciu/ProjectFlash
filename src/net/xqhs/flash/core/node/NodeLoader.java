@@ -62,7 +62,8 @@ public class NodeLoader extends Unit implements Loader<Node>, Serializable {
 
 	public List<Node> loadDeployment(List<String> args) {
 		lf("Booting Flash-MAS.");
-
+		
+		
 		// load settings & scenario
 		DeploymentConfiguration deploymentConfiguration = null;
 		try {
@@ -93,8 +94,11 @@ public class NodeLoader extends Unit implements Loader<Node>, Serializable {
 				nodes.add(node);
 				lf("node loaded: []", node.getName());
 
-				// Start the server now that the node is loaded
-				node.startServer();
+//				// Start the server now that the node is loaded
+				for (Node nodes1 : nodes) {
+					nodes1.startServer();
+					nodes1.start();
+				}
 
 				// Start node functionality
 				node.start();
