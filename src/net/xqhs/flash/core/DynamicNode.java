@@ -57,8 +57,8 @@ public class DynamicNode extends Node {
         try {
             MultiTreeMap rootTree = this.getDeploymentConfiguration();
             DeploymentConfiguration deploymentConfiguration = new DeploymentConfiguration();
-            List<String> autoCreated = new LinkedList<>(); // Retrieve/update the list of auto-created entity IDs
-            Map<String, String> name_ids = new HashMap<>(); // Retrieve/update the name to ID mapping
+            List<String> autoCreated = new LinkedList<>();
+            Map<String, String> name_ids = new HashMap<>();
             UnitComponentExt log = new UnitComponentExt("Dynamic Loader"); // Logger instance
 
             // Use DeploymentProxy to create a valid context
@@ -68,12 +68,12 @@ public class DynamicNode extends Node {
             cliArgs.forEach(arg -> argsList.add(arg.replace('<', ' ').replace('>', ' ').trim()));
             Iterator<String> argsIterator = argsList.iterator();
 
-            // Parse the CLI args into the configuration tree using DeploymentProxy
+            // it parsing the CLI args into the configuration tree using DeploymentProxy
             DeploymentConfigurationProxy.publicReadCLIArgs(deploymentConfiguration, argsIterator, baseContext, rootTree, autoCreated, name_ids, log);
 
             // Load entities parsed from CLI
-            List<MultiTreeMap> updatedEntities = deploymentConfiguration.getEntityList(); // Fixed method call
-            List<MultiTreeMap> filteredEntities = DeploymentConfiguration.filterCategoryInContext(updatedEntities, null, null); // Adjust filter criteria as needed
+            List<MultiTreeMap> updatedEntities = deploymentConfiguration.getEntityList();
+            List<MultiTreeMap> filteredEntities = DeploymentConfiguration.filterCategoryInContext(updatedEntities, null, null);
             loadParsedEntities(filteredEntities, updatedEntities, deploymentConfiguration, autoCreated);
         } catch (Exception e) {
             e.printStackTrace();
@@ -100,10 +100,9 @@ public class DynamicNode extends Node {
         }
     }
 
-    // Dummy method to provide a MultiTreeMap instance for demonstration purposes
+
     private MultiTreeMap getDeploymentConfiguration() {
         MultiTreeMap deploymentConfiguration = new MultiTreeMap();
-        // Populate this according to your actual configuration or logic
         return deploymentConfiguration;
     }
 

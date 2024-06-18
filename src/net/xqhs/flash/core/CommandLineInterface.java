@@ -9,7 +9,7 @@ public class CommandLineInterface {
 
     public static void main(String[] args) throws Exception {
         // Initialize DynamicNode with node configuration
-        MultiTreeMap nodeConfig = new MultiTreeMap(); // Load or initialize your node configuration
+        MultiTreeMap nodeConfig = new MultiTreeMap();
         DynamicNode node = new DynamicNode(nodeConfig);
         node.start(); // Start the node
 
