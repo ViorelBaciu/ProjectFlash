@@ -68,7 +68,7 @@ public class DynamicNode extends Node {
             cliArgs.forEach(arg -> argsList.add(arg.replace('<', ' ').replace('>', ' ').trim()));
             Iterator<String> argsIterator = argsList.iterator();
 
-            // it parsing the CLI args into the configuration tree using DeploymentProxy
+            //  parsing the CLI args into the configuration tree using DeploymentProxy
             DeploymentConfigurationProxy.publicReadCLIArgs(deploymentConfiguration, argsIterator, baseContext, rootTree, autoCreated, name_ids, log);
 
             // Load entities parsed from CLI
@@ -107,6 +107,13 @@ public class DynamicNode extends Node {
     }
 
     public void startServer() {
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                timer.cancel();
+            }
+        }, 2000);
         try {
             Node node = Node.getInstance();
             Registry registry = LocateRegistry.createRegistry(1099);
@@ -124,3 +131,4 @@ public class DynamicNode extends Node {
         }
     }
 }
+

@@ -12,38 +12,82 @@
 package test.compositePingPong;
 
 import net.xqhs.flash.FlashBoot;
+import net.xqhs.flash.core.DeploymentConfiguration;
+import net.xqhs.flash.core.DeploymentUtils;
+import net.xqhs.flash.core.testVio.ArgsWrapper;
+import net.xqhs.flash.core.testVio.EntityScheduler;
+import net.xqhs.flash.core.testVio.SingleLine;
+import net.xqhs.flash.core.util.MultiTreeMap;
+import net.xqhs.util.logging.UnitComponentExt;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * Deployment testing.
  */
-public class Boot
-{
+public class Boot {
 	/**
 	 * Designation for shards.
 	 */
-	public static final String	FUNCTIONALITY	= "TESTING";
+	public static final String FUNCTIONALITY = "TESTING";
 	/**
 	 * Different designation for shards.
 	 */
-	public static final String	MONITORING		= "OTHER-MONITORING";
-	
+	public static final String MONITORING = "OTHER-MONITORING";
+
 	/**
 	 * Performs test
-	 * 
-	 * @param args_
-	 *            - not used.
+	 *
+	 * @param args_ - the command-line arguments.
 	 */
-	public static void main(String[] args_)
-	{
+	public static void main(String[] args_) {
+		// Example command-line arguments
 		String args = "";
-		
+
 		args += " -package testing -loader agent:composite";
 		args += " -node node1";
-		// notice how the name of the shard does not necessarily need to contain "Shard", as it is handled by autoFind
 		args += " -agent composite:AgentA -shard messaging -shard PingTest otherAgent:AgentB -shard EchoTesting";
 		args += " -agent composite:AgentB -shard messaging -shard PingBackTest -shard EchoTesting";
-		
-		FlashBoot.main(args.split(" "));
+
+
+
+
+		// Split the string into an array
+		String[] cliArgs = args.split(" ");
+
+
+		// Initialize the base context, root tree, and other necessary structures
+		DeploymentUtils.PublicCtxtTriple baseContext = new DeploymentUtils.PublicCtxtTriple("root", null, null);
+
+
+
+		MultiTreeMap rootTree = new MultiTreeMap();
+		List<String> autoCreated = new ArrayList<>();
+		Map<String, String> name_ids = new HashMap<>();
+		UnitComponentExt log = new UnitComponentExt();  // Assuming this is your logging class
+
+		DeploymentConfiguration config = new DeploymentConfiguration();
+		EntityScheduler loaderScheduler =  new EntityScheduler();
+
+		// Call the readCLIArgs method with the parsed arguments
+
+		DeploymentUtils.publicReadCLIArgs( config, Arrays.asList(cliArgs).iterator(), baseContext, rootTree, autoCreated, name_ids, log);
+
+		ArgsWrapper argsWrapper = new ArgsWrapper(args);
+		loaderScheduler.scheduleEntity(()->{
+			String agentBArgs = SingleLine.extractAgent( argsWrapper.getArgs(), "composite: AgentB");
+			System.out.println("Extracted AgentB Args: " + agentBArgs);
+
+		}, 2, TimeUnit.SECONDS);
+
+
+		FlashBoot.main(cliArgs);
 	}
-	
+
+
 }
+
+
+

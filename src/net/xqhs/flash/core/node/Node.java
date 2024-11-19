@@ -61,6 +61,13 @@ import net.xqhs.util.logging.Unit;
  * @author Andrei Olaru
  */
 public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , Serializable {
+	public Node() {
+
+	}
+//	public void setDeploymentID(String deploymentID) {
+//
+//	}
+
 	/**
 	 * Proxy for a {@link Node}.
 	 */
@@ -185,13 +192,9 @@ public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , 
 		setUnitName(EntityIndex.register(CategoryName.NODE.s(), this)).lock();
 		li("Active entitites:", activeEntities);
 	}
-	///\ Add code
-	public Node() throws RemoteException {
-		super();
-		agentMap = new HashMap<>();  // Initialize the map
-		callbacks = new ArrayList<>();  // Initialize the callback list
 
-	}
+	/*public TestCodeVio() throws RemoteException {
+	}*/
 	///\ Add code
 
 	/**
@@ -298,7 +301,10 @@ public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , 
 //			e.printStackTrace();
 //		}
 		try {
+			// Create and export remote object
 			Node node = Node.getInstance();
+
+			// Register the remote object in the RMI registry
 			Registry registry = LocateRegistry.createRegistry(1099);
 			registry.rebind("Node", node);
 			System.out.println("Node server started");
@@ -308,22 +314,7 @@ public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , 
 	}
 
 
-//		try {
-//			// Creează și exportă obiectul remote
-//			Node node = Node.getInstance();
-////			Node node = new Node();
-//
-//			// Înregistrează obiectul remote în RMI registry
-//			Registry registry = LocateRegistry.createRegistry(1099);
-//			registry.rebind("Node", node);
-//
-//			System.out.println("Node server started");
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-
-
-	///\ until here
+	///\
 
 
 
@@ -346,14 +337,17 @@ public class Node extends Unit implements Entity<Node>, Remote, NodeInterface , 
 				le("failed to start entity [].", entityName);
 		}
 		isRunning = true;
+		// signal that the agent (node) has started
 		if(messagingShard != null)
 			messagingShard.signalAgentEvent(new AgentEvent(AgentEventType.AGENT_START));
 		sendStatusUpdate();
 		li("Node [] started.", name);
-		
+
+		// Register entities to the central entity if applicable
 		if(getName() != null && registerEntitiesToCentralEntity())
 			lf("Entities successfully registered to control entity.");
-		
+
+		// Monitor active entities if configured to exit on no active entities
 		if(EXIT_ON_NO_ACTIVE_ENTITIES) {
 			activeMonitor = new Timer();
 			activeMonitor.schedule(new TimerTask() {

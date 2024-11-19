@@ -752,7 +752,7 @@ public class DeploymentConfiguration extends MultiTreeMap {
 	 * @param log
 	 *            - the {@link Logger} to use.
 	 */
-	protected static void readCLIArgs(Iterator<String> args, CtxtTriple baseContext, MultiTreeMap rootTree,
+	public static void readCLIArgs(Iterator<String> args, CtxtTriple baseContext, MultiTreeMap rootTree,
 			List<String> autoCreated, Map<String, String> name_ids, UnitComponentExt log) {
 		Deque<CtxtTriple> context = new LinkedList<>();
 		context.push(baseContext);
