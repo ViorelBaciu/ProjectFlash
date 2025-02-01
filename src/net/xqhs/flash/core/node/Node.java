@@ -374,16 +374,16 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 		timer.schedule(new TimerTask() {
 			@Override
 			public void run() {
-				try{
+				try {
+					// Argument set for agent loading
 					String[] argset = ("-agent composite:AgentC -shard messaging par:val " +
 							"-shard EchoTesting " +
 							"-agent agentD parameter:one").split(" ");
 
-					// Parse arguments into MultiTreeMap configurations
 					MultiTreeMap nodeConfiguration = new MultiTreeMap();
 					MultiTreeMap entityConfiguration = new MultiTreeMap();
 
-					// DeploymentConfiguration.readCLIArgs to parse the arguments
+					// Parsing CLI arguments
 					DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
 					deploymentConfig.readCLIArgs(Arrays.asList(argset).iterator(),
 							new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, nodeConfiguration),
@@ -393,20 +393,39 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 					Loader<?> defaultLoader = new SimpleLoader();
 					Map<String, Entity<?>> loaded = new HashMap<>();
 
-					// Debugging configurations
+					// Debugging
 					System.out.println("Debug: nodeConfiguration - " + nodeConfiguration);
 					System.out.println("Debug: entityConfiguration - " + entityConfiguration);
 
-					// Load entities using EntityLoader
-					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
-					entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);
+					// Check if context entities exist
+					List<String> contextEntities = entityConfiguration.getValues(DeploymentConfiguration.CONTEXT_ELEMENT_NAME);
+					if (contextEntities != null && !contextEntities.isEmpty()) {
+						for (String ctxEntity : contextEntities) {
+							System.out.println("Loading context entity: " + ctxEntity);
+							EntityLoader contextLoader = new EntityLoader(loaders, defaultLoader, loaded);
+							MultiTreeMap contextEntityConfig = new MultiTreeMap();
+							contextEntityConfig.addFirst(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, ctxEntity);
+							contextLoader.loadEntity(Node.this, nodeConfiguration, contextEntityConfig);
+						}
+					} else {
+						System.err.println("Warning: No context entities found in entityConfiguration.");
+					}
 
-				} catch (Exception e){
+					// Load entities using EntityLoader
+					if (!entityConfiguration.getSimpleNames().isEmpty() || !entityConfiguration.getTreeKeys().isEmpty()) {
+						EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
+						entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);
+					} else {
+						System.err.println("Warning: entityConfiguration is empty, skipping entity loading.");
+					}
+
+				} catch (Exception e) {
 					System.err.println("Error in TimerTask: " + e.getMessage());
 					e.printStackTrace();
 				}
 			}
-		}, 200);
+		}, 5000);
+
 
 		return true;
 	}
