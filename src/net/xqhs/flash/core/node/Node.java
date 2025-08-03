@@ -12,14 +12,20 @@
 package net.xqhs.flash.core.node;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 import net.xqhs.flash.core.*;
+import net.xqhs.flash.core.node.clientApp.ClientApp;
 import net.xqhs.flash.core.node.clientApp.ClientCallbackInterface;
 
-import net.xqhs.flash.core.node.clientApp.NodeLoaderDecorator;
 import net.xqhs.util.logging.UnitComponent;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -61,7 +67,7 @@ import net.xqhs.util.logging.Unit;
  * 
  * @author Andrei Olaru
  */
-public class Node extends Unit implements Entity<Node> , NodeInterface{
+public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 	@Override
 	public Map<String, String> listEntities() {
 		return new HashMap<>();
@@ -169,6 +175,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 
 	MultiTreeMap nodeConfiguration = new MultiTreeMap();
 
+	private final Lock lock = new ReentrantLock();
 
 	public void configure1(MultiTreeMap configure1) {
 		this.nodeConfiguration = configure1;
@@ -181,12 +188,9 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 	 *            the configuration of the node. Can be <code>null</code>.
 	 */
 
-	// private  NodeLoader nodeLoader;
-
 	public Node(MultiTreeMap nodeConfiguration) {
 		this.nodeConfiguration = nodeConfiguration;
 		this.callbacks = new ArrayList<>();
-//		this.nodeLoader = nodeLoader;
 
 		if(nodeConfiguration != null) {
 			name = nodeConfiguration.get(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
@@ -335,6 +339,10 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 	}
 	@Override
 	public boolean start() {
+
+		StartServer startServer = new StartServer(nodeConfiguration);
+		startServer.startServer();
+
 		li("Starting node [] with entities [].", name, entityOrder);
 		for(Entity<?> entity : entityOrder) {
 			String entityName = entity.getName();
@@ -375,13 +383,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 			@Override
 			public void run() {
 				try {
-					// Argument set for agent loading
-					String[] argset = ("-agent composite:AgentC -shard messaging par:val " +
-							"-shard EchoTesting " +
-							"-agent agentD parameter:one").split(" ");
-
-					MultiTreeMap nodeConfiguration = new MultiTreeMap();
-					MultiTreeMap entityConfiguration = new MultiTreeMap();
+					/*MultiTreeMap entityConfiguration = new MultiTreeMap();
 
 					// Parsing CLI arguments
 					DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
@@ -393,38 +395,50 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 					Loader<?> defaultLoader = new SimpleLoader();
 					Map<String, Entity<?>> loaded = new HashMap<>();
 
-					// Debugging
-					System.out.println("Debug: nodeConfiguration - " + nodeConfiguration);
-					System.out.println("Debug: entityConfiguration - " + entityConfiguration);
+					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
+					entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);*/
 
-					// Check if context entities exist
-					List<String> contextEntities = entityConfiguration.getValues(DeploymentConfiguration.CONTEXT_ELEMENT_NAME);
-					if (contextEntities != null && !contextEntities.isEmpty()) {
-						for (String ctxEntity : contextEntities) {
-							System.out.println("Loading context entity: " + ctxEntity);
-							EntityLoader contextLoader = new EntityLoader(loaders, defaultLoader, loaded);
-							MultiTreeMap contextEntityConfig = new MultiTreeMap();
-							contextEntityConfig.addFirst(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, ctxEntity);
-							contextLoader.loadEntity(Node.this, nodeConfiguration, contextEntityConfig);
-						}
-					} else {
-						System.err.println("Warning: No context entities found in entityConfiguration.");
-					}
+					// Argument set for agent loading
+					String[] argset = ("-agent composite:AgentXX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one").split(" ");
+				//	String[] argset = ("-agent composite:AgentA -shard messaging par:val -shard EchoTesting -agent agentD parameter:one").split("");
+//					MultiTreeMap rootTree = nodeConfiguration.getATree("root");
+//					if (rootTree == null) {
+//						rootTree = new MultiTreeMap();
+//						nodeConfiguration.addAgentToRootTree("root", rootTree, false, true);
+//					}
 
-					// Load entities using EntityLoader
-					if (!entityConfiguration.getSimpleNames().isEmpty() || !entityConfiguration.getTreeKeys().isEmpty()) {
-						EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
-						entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);
-					} else {
-						System.err.println("Warning: entityConfiguration is empty, skipping entity loading.");
+					MultiTreeMap rootTree = getRootTree();
+					if (rootTree == null) {
+						rootTree = new MultiTreeMap();
+						setRootTree(rootTree);
 					}
+					DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
+					deploymentConfig.readCLIArgs(
+							Arrays.asList(argset).iterator(),
+							new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, rootTree),
+							rootTree,
+							new LinkedList<>(),
+							new HashMap<>(),
+							new UnitComponent("test")
+					);
+
+//					Map<String, Map<String, List<Loader<?>>>> loaders = new HashMap<>();
+//					Loader<?> defaultLoader = new SimpleLoader();
+//					Map<String, Entity<?>> loaded = new HashMap<>();
+//
+//					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
+//					entityLoader.loadEntity(Node.this, rootTree, new MultiTreeMap());
+
+					System.out.println("Agents added successfully in rootTree: " + rootTree);
+
+
 
 				} catch (Exception e) {
 					System.err.println("Error in TimerTask: " + e.getMessage());
 					e.printStackTrace();
 				}
 			}
-		}, 5000);
+		}, 10);
 
 
 		return true;
@@ -660,6 +674,23 @@ public class Node extends Unit implements Entity<Node> , NodeInterface{
 			} catch (RemoteException e){
 				System.out.println("Failed to notify client: " + e.getMessage());
 			}
+		}
+	}
+	public MultiTreeMap getRootTree() {
+		lock.lock();
+		try {
+			return nodeConfiguration.getATree("root");
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	public void setRootTree(MultiTreeMap rootTree) {
+		lock.lock();
+		try {
+			nodeConfiguration.addAgentToRootTree("root", rootTree, false, true);
+		} finally {
+			lock.unlock();
 		}
 	}
 

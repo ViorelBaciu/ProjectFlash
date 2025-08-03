@@ -12,9 +12,10 @@ import java.util.List;
 import java.util.Map;
 
 public class EntityLoader {
-    private Map<String, Map<String, List<Loader<?>>>> loaders;
-    private Loader<?> defaultLoader;
-    private Map<String, Entity<?>> loaded;
+    private static final String NAMESEP = DeploymentConfiguration.NAME_SEPARATOR;
+    private final Map<String, Map<String, List<Loader<?>>>> loaders;
+    private final Loader<?> defaultLoader;
+    private final Map<String, Entity<?>> loaded;
 
     public EntityLoader(Map<String, Map<String, List<Loader<?>>>> loaders, Loader<?> defaultLoader, Map<String, Entity<?>> loaded) {
         this.loaders = loaders;
@@ -22,14 +23,23 @@ public class EntityLoader {
         this.loaded = loaded;
     }
 
+    /**
+     * Loads an entity for a given node configuration.
+     *
+     * @param node              the Node instance to which the entity is added.
+     * @param nodeConfiguration the node configuration.
+     * @param entityConfiguration the entity configuration.
+     */
     public void loadEntity(Node node, MultiTreeMap nodeConfiguration, MultiTreeMap entityConfiguration) {
+        // Get basic attributes from the configuration
         String name = entityConfiguration.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
         String kind = null, id = null, cp = entityConfiguration.get(SimpleLoader.CLASSPATH_KEY);
         String local_id = entityConfiguration.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE);
 
-        if (name != null && name.contains(":")) {
-            kind = name.split(":")[0];
-            id = name.split(":", 2)[1];
+        // Parse kind and id from the name
+        if (name != null && name.contains(NAMESEP)) {
+            kind = name.split(NAMESEP)[0];
+            id = name.split(NAMESEP, 2)[1];
         }
 
         if (kind == null || kind.isEmpty()) {
@@ -43,12 +53,107 @@ public class EntityLoader {
             }
         }
 
-        if (name != null && name.contains(":") && id != null) {
+        // Adjust the entity configuration if the name contains kind:id
+        if (name != null && name.contains(NAMESEP) && id != null) {
             entityConfiguration.addFirst(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, id);
         }
 
+        // Check if it's a composite agent and handle it accordingly
+        if (name != null && name.startsWith("agent/composite/")) {
+            processAgentComposite(node, nodeConfiguration, entityConfiguration, name);
+        } else {
+            // Locate the appropriate loader
+            List<Loader<?>> loaderList = findLoaderForEntity(nodeConfiguration, kind, id);
+
+            // Prepare context and subordinate entities
+            List<Entity.EntityProxy<?>> context = prepareEntityContext(entityConfiguration);
+            List<MultiTreeMap> subEntities = DeploymentConfiguration.filterContext(null, local_id);
+
+            // Attempt to load the entity with the appropriate loader
+            Entity<?> entity = loadEntityWithLoader(loaderList, entityConfiguration, context, subEntities);
+
+            // If loading with the specific loader failed, try the default loader
+            if (entity == null) {
+                cp = Loader.autoFind(null, null, cp, kind, id, nodeConfiguration.getFirstValue("category"), null);
+                if (cp != null) {
+                    entityConfiguration.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
+                    if (defaultLoader.preload(entityConfiguration, context)) {
+                        entity = defaultLoader.load(entityConfiguration, context, subEntities);
+                    }
+                }
+            }
+
+            // Register the loaded entity if successful
+            if (entity != null) {
+                loaded.put(local_id, entity);
+                node.registerEntity(nodeConfiguration.getFirstValue("category"), entity, id);
+            }
+        }
+    }
+
+    /**
+     * Processes a composite agent by splitting its name and handling it accordingly.
+     *
+     * @param node              the Node instance to which the entity is added.
+     * @param nodeConfiguration the node configuration.
+     * @param entityConfiguration the entity configuration.
+     * @param name              the composite agent name.
+     */
+    private void processAgentComposite(Node node, MultiTreeMap nodeConfiguration, MultiTreeMap entityConfiguration, String name) {
+        try {
+            // Extract the agent name from the composite name (e.g., "agent/composite/AgentA")
+            String agentName = name.substring("agent/composite/".length());
+
+            // Add the agent to the entity configuration
+            entityConfiguration.addFirst(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, agentName);
+
+            // Example of adding additional attributes for the agent (if needed)
+            entityConfiguration.addFirst("agent/composite", "true");
+
+            // Load the agent using the loaders
+            List<Loader<?>> loaderList = findLoaderForEntity(nodeConfiguration, "agent", agentName);
+            List<Entity.EntityProxy<?>> context = prepareEntityContext(entityConfiguration);
+            List<MultiTreeMap> subEntities = DeploymentConfiguration.filterContext(null, null);
+
+            // Try loading the agent with the appropriate loader
+            Entity<?> entity = loadEntityWithLoader(loaderList, entityConfiguration, context, subEntities);
+
+            // If loading fails, try the default loader
+            if (entity == null) {
+                String cp = Loader.autoFind(null, null, null, "agent", agentName, nodeConfiguration.getFirstValue("category"), null);
+                if (cp != null) {
+                    entityConfiguration.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
+                    if (defaultLoader.preload(entityConfiguration, context)) {
+                        entity = defaultLoader.load(entityConfiguration, context, subEntities);
+                    }
+                }
+            }
+
+            // Register the loaded agent if successful
+            if (entity != null) {
+                loaded.put(agentName, entity);
+                node.registerEntity(nodeConfiguration.getFirstValue("category"), entity, agentName);
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error processing agent composite: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Finds the loader for the entity from the loaders map.
+     *
+     * @param nodeConfiguration the node configuration.
+     * @param kind              the kind of the entity.
+     * @param id                the id of the entity.
+     * @return a list of loaders for the entity.
+     */
+    private List<Loader<?>> findLoaderForEntity(MultiTreeMap nodeConfiguration, String kind, String id) {
         List<Loader<?>> loaderList = null;
         String catName = nodeConfiguration.getFirstValue("category");
+
+        // Check the loaders map for a suitable loader
         if (loaders.containsKey(catName)) {
             if (loaders.get(catName).containsKey(kind)) {
                 loaderList = loaders.get(catName).get(kind);
@@ -57,6 +162,16 @@ public class EntityLoader {
             }
         }
 
+        return loaderList;
+    }
+
+    /**
+     * Prepares the context for entity loading.
+     *
+     * @param entityConfiguration the entity configuration.
+     * @return the list of entity proxies in context.
+     */
+    private List<Entity.EntityProxy<?>> prepareEntityContext(MultiTreeMap entityConfiguration) {
         List<Entity.EntityProxy<?>> context = new LinkedList<>();
         if (entityConfiguration.isSimple(DeploymentConfiguration.CONTEXT_ELEMENT_NAME)) {
             for (String contextItem : entityConfiguration.getValues(DeploymentConfiguration.CONTEXT_ELEMENT_NAME)) {
@@ -65,11 +180,20 @@ public class EntityLoader {
                 }
             }
         }
-        List<MultiTreeMap> subEntities = DeploymentConfiguration.filterContext(null, local_id);
-        if (subEntities == null) {
-            subEntities = new ArrayList<>();
-        }
+        return context;
+    }
 
+    /**
+     * Attempts to load an entity using the provided loader list.
+     *
+     * @param loaderList         the list of loaders to try.
+     * @param entityConfiguration the entity configuration.
+     * @param context            the context of the entity.
+     * @param subEntities       the list of subordinate entities.
+     * @return the loaded entity or null if loading failed.
+     */
+    private Entity<?> loadEntityWithLoader(List<Loader<?>> loaderList, MultiTreeMap entityConfiguration,
+                                           List<Entity.EntityProxy<?>> context, List<MultiTreeMap> subEntities) {
         Entity<?> entity = null;
         if (loaderList != null) {
             for (Loader<?> loader : loaderList) {
@@ -79,20 +203,6 @@ public class EntityLoader {
                 if (entity != null) break;
             }
         }
-
-        if (entity == null) {
-            cp = Loader.autoFind(null, null, cp, kind, id, catName, null);
-            if (cp != null) {
-                entityConfiguration.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
-                if (defaultLoader.preload(entityConfiguration, context)) {
-                    entity = defaultLoader.load(entityConfiguration, context, subEntities);
-                }
-            }
-        }
-
-        if (entity != null) {
-            loaded.put(local_id, entity);
-            node.registerEntity(catName, entity, id);
-        }
+        return entity;
     }
 }

@@ -896,7 +896,9 @@ public class DeploymentConfiguration extends MultiTreeMap {
 				}
 			}
 		}
+		System.out.println("Agents after loading: " + rootTree.getHierarchicalNames());
 	}
+
 	
 	/**
 	 * Checks if the given command line argument designates a category (begins with {@value #CLI_CATEGORY_PREFIX}).
