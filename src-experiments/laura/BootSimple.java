@@ -31,14 +31,25 @@ public class BootSimple {
 		// ce merge acum:
 		test_args += " -node nodeA";
 		test_args += " -pylon local:";
-//		test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentA2";
-//		test_args += " -agent agentA2 classpath:AgentPingPong";
+		test_args += " -agent AgentA1";
+		// test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentXX";
+		test_args += " -agent agentA2 classpath:AgentPingPong";
 //		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentA2";
 //		test_args += " -agent agentB2 classpath:AgentPingPong";
 		
-		test_args += " -node nodeB";
-		test_args += " -pylon local:";
-//		test_args += " -agent agentC1 classpath:AgentPingPong sendTo:agentA2";
+//		test_args += " -node nodeB";
+//		test_args += " -pylon local:";
+//		test_args += " -node nodeC";
+//		test_args += " -pylon local:";
+//		test_args += " -node nodeD";
+//		test_args += " -pylon local:";
+//		test_args += " -node nodeE";
+//		test_args += " -pylon local:";
+//		test_args += " -node nodeF";
+//		test_args += " -pylon local:";
+//		test_args += " -node nodeG";
+//		test_args += " -pylon local:";
+//		test_args += " -agent agentC1 classpath:AgentPingPong sendTo:agentC2";
 //		test_args += " -agent agentC2 classpath:AgentPingPong";
 //		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentB2";
 //		test_args += " -agent agentB2 classpath:AgentPingPong";

@@ -184,6 +184,8 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 	MultiTreeMap nodeConfiguration = new MultiTreeMap();
 
 	private final Lock lock = new ReentrantLock();
+	private int currentPort;
+	
 
 	public void configure1(MultiTreeMap configure1) {
 		this.nodeConfiguration = configure1;
@@ -198,6 +200,8 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 	public Node(MultiTreeMap nodeConfiguration) {
 		this.nodeConfiguration = nodeConfiguration;
 		this.callbacks = new ArrayList<>();
+
+
 
 		if(nodeConfiguration != null) {
 			name = nodeConfiguration.get(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
@@ -240,6 +244,12 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 		li("Active entitites:", activeEntities);
 
 	}
+
+	public Node(MultiTreeMap nodeConfiguration, int port) {
+		this(nodeConfiguration);
+		this.currentPort = port;
+	}
+
 	private void initializeNodeConfiguration() {
 
 		if (nodeConfiguration != null) {
@@ -370,29 +380,9 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 			@Override
 			public void run() {
 				try {
-					/*MultiTreeMap entityConfiguration = new MultiTreeMap();
 
-					// Parsing CLI arguments
-					DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
-					deploymentConfig.readCLIArgs(Arrays.asList(argset).iterator(),
-							new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, nodeConfiguration),
-							nodeConfiguration, new LinkedList<>(), new HashMap<>(), new UnitComponent("test"));
-
-					Map<String, Map<String, List<Loader<?>>>> loaders = new HashMap<>();
-					Loader<?> defaultLoader = new SimpleLoader();
-					Map<String, Entity<?>> loaded = new HashMap<>();
-
-					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
-					entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);*/
-
-					String[] argset = ("-agent composite:AgentXX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one").split(" ");
-					// String[] argset = ("-agent composite:AgentA -shard messaging par:val -shard
-					// EchoTesting -agent agentD parameter:one").split("");
-//					MultiTreeMap rootTree = nodeConfiguration.getATree("root");
-//					if (rootTree == null) {
-//						rootTree = new MultiTreeMap();
-//						nodeConfiguration.addAgentToRootTree("root", rootTree, false, true);
-//					}
+					String[] argset = ("-node nodeA -pylon local: -agent composite:agentDX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one")
+							.split(" ");
 
 					MultiTreeMap rootTree = getRootTree();
 					if (rootTree == null) {
@@ -411,24 +401,12 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 
 					System.out.println("Agents added successfully in rootTree: " + rootTree);
 
-//					Map<String, Map<String, List<Loader<?>>>> loaders = new HashMap<>();
-//					Loader<?> defaultLoader = new SimpleLoader();
-//					Map<String, Entity<?>> loaded = new HashMap<>();
-//
-//					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
-//					entityLoader.loadEntity(Node.this, rootTree, new MultiTreeMap());
-
-
-
-
-
 				} catch (Exception e) {
 					System.err.println("Error in TimerTask: " + e.getMessage());
 					e.printStackTrace();
 				}
 			}
 		}, 10);
-
 
 		return true;
 	}
@@ -744,6 +722,155 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 			}
 		}
 	}
+
+	public void printAllAgents2() {
+		MultiTreeMap rootTree = getRootTree();
+
+		if (rootTree == null) {
+			System.out.println("Nu exista agenti in configuratia nodului.");
+			return;
+		}
+
+		System.out.println("Lista tuturor agentilor din nodul curent:");
+
+		// Parcurge toate categoriile din rootTree
+		for (String category : rootTree.getHierarchicalNames()) {
+			if (rootTree.isHierarchical(CategoryName.AGENT.s())) {
+				MultiTreeMap agentCategoryTree = rootTree.getATree(CategoryName.AGENT.s());
+				printAgentTree2("Agent", agentCategoryTree, 0);
+			} else {
+				// Poți afișa și alte entități, dacă este necesar
+				// MultiTreeMap otherCategoryTree = rootTree.getATree(category);
+				// printEntities(otherCategoryTree, category);
+			}
+		}
+
+		for (String agentName : rootTree.getSimpleNames()) {
+			System.out.println(" - " + agentName);
+		}
+	}
+
+	private void printAgentTree2(String parentName, MultiTreeMap tree, int level) {
+		StringBuilder indent = new StringBuilder();
+		for (int i = 0; i < level * 4; i++) {
+			indent.append(" ");
+		}
+
+		// Afișează agenții de tip "simplu" (valori simple)
+		for (String agentName : tree.getSimpleNames()) {
+			System.out.println(indent + "├── [Simple Agent] " + agentName);
+		}
+
+		// Afișează agenții de tip "ierarhic" (sub-arbori)
+		for (String subCategory : tree.getHierarchicalNames()) {
+			MultiTreeMap subTree = tree.getATree(subCategory);
+			if (subTree != null) {
+				if (level > 0) { // Pentru sub-categorii
+					System.out.println(indent + "├── [" + subCategory + "]");
+				}
+				printAgentTree(subCategory, subTree, level + 1);
+			}
+		}
+	}
+
+	public void addNewAgent(String nodeName, String pylonName, String agentName, String agentType, String agentClass) {
+		lock.lock();
+		try {
+			MultiTreeMap rootTree = getRootTree();
+			if (rootTree == null) {
+				rootTree = new MultiTreeMap();
+				setRootTree(rootTree);
+			}
+
+			// 1. Navighează către nodul specificat
+			MultiTreeMap nodeTree = rootTree.getSingleTree(CategoryName.NODE.s(), true).getATree(nodeName);
+			if (nodeTree == null) {
+				System.err.println("Nodul '" + nodeName + "' nu a fost gasit. Adaugarea agentului a esuat.");
+				return;
+			}
+
+			// 2. Navighează către pylon-ul specificat sub acel nod
+			MultiTreeMap pylonTree = nodeTree.getSingleTree(CategoryName.PYLON.s(), true).getATree(pylonName);
+			if (pylonTree == null) {
+				System.err.println("Pylon-ul '" + pylonName + "' nu a fost gasit sub nodul '" + nodeName
+						+ "'. Adaugarea agentului a esuat.");
+				return;
+			}
+
+			// 3. Obține sau creează arborele de agenți sub pylon
+			MultiTreeMap agentCategoryTree = pylonTree.getSingleTree(CategoryName.AGENT.s(), true);
+
+			// 4. Adaugă agentul
+			MultiTreeMap newAgentNode = agentCategoryTree.addOneTreeGet(agentName, new MultiTreeMap());
+			newAgentNode.addSingleValue("type", agentType);
+			newAgentNode.addSingleValue("class", agentClass);
+
+			lf("Noul agent '{}' a fost adaugat la configuratia nodului '{}' sub pylon-ul '{}'.", agentName, nodeName,
+					pylonName);
+
+		} finally {
+			lock.unlock();
+		}
+	}
+
+//	public void addNewAgent(String agentName, String agentType, String agentClass) {
+//		lock.lock();
+//		try {
+//			MultiTreeMap rootTree = getRootTree();
+//			if (rootTree == null) {
+//				rootTree = new MultiTreeMap();
+//				setRootTree(rootTree);
+//			}
+//
+//			// Asigură-te că există un arbore pentru categoria "agent"
+//			MultiTreeMap agentCategoryTree = rootTree.getSingleTree(CategoryName.AGENT.s(), true);
+//
+//			// Adaugă direct valorile noului agent sub numele acestuia
+//			// Creezi un sub-arbore pentru noul agent și adaugi valorile în el.
+//			MultiTreeMap newAgentNode = agentCategoryTree.addOneTreeGet(agentName, new MultiTreeMap());
+//
+//			// Adaugă atributele agentului în noul sub-arbore.
+//			newAgentNode.addSingleValue("type", agentType);
+//			newAgentNode.addSingleValue("class", agentClass);
+//
+//			lf("Noul agent '{}' a fost adaugat la configuratie.", agentName);
+//
+//		} finally {
+//			lock.unlock();
+//		}
+//	}
+
+//	public void addNewAgent(String command) {
+//		String[] args = command.split(" ");
+//		MultiTreeMap currentTree = getRootTree();
+//
+//		for (int i = 0; i < args.length; i += 2) {
+//			String key = args[i].substring(1); // elimină '-'
+//			String value = args[i + 1];
+//
+//			// Navighează prin arborele de configurare
+//			if (currentTree.isHierarchical(key) && currentTree.getATree(key).containsKey(value)) {
+//				// Dacă cheia (e.g., 'node', 'pylon') și valoarea (e.g., 'nodeA', 'local:')
+//				// există,
+//				// trecem la următorul nivel în arbore
+//				currentTree = currentTree.getATree(key).getATree(value);
+//			} else if (key.equals("agent")) {
+//				// Când ajungem la cheia 'agent', adăugăm noul agent în arborele curent
+//				// (e.g., în sub-arborele pylon-ului)
+//				MultiTreeMap newAgentNode = new MultiTreeMap();
+//				newAgentNode.addSingleValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, value);
+//				// Poți adăuga și alte atribute, cum ar fi 'class' sau 'type'
+//				newAgentNode.addSingleValue("class", "com.example." + value);
+//				currentTree.addOneTree(value, newAgentNode);
+//				System.out.println("Agentul '" + value + "' a fost adaugat cu succes.");
+//				return;
+//			} else {
+//				System.out.println("Calea specificata nu exista sau este invalida: " + command);
+//				return;
+//			}
+//		}
+//	}
+
 
 
 }
