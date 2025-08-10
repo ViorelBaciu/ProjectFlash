@@ -35,7 +35,7 @@ public class AgentPingPong extends Unit implements Agent {
 	/**
 	 * Initial delay before the first ping message.
 	 */
-	protected static final long		PING_INITIAL_DELAY			= 0;
+	protected static final long PING_INITIAL_DELAY = 0;
 	/**
 	 * Time between ping messages.
 	 */

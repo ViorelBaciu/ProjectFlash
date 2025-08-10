@@ -11,33 +11,40 @@
  ******************************************************************************/
 package net.xqhs.flash.core.node;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
-import net.xqhs.flash.core.*;
-import net.xqhs.flash.core.node.clientApp.ClientApp;
-import net.xqhs.flash.core.node.clientApp.ClientCallbackInterface;
-
-import net.xqhs.util.logging.UnitComponent;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import net.xqhs.flash.core.CategoryName;
+import net.xqhs.flash.core.DeploymentConfiguration;
+import net.xqhs.flash.core.Entity;
 import net.xqhs.flash.core.agent.AgentEvent;
 import net.xqhs.flash.core.agent.AgentEvent.AgentEventType;
 import net.xqhs.flash.core.agent.AgentWave;
 import net.xqhs.flash.core.mobileComposite.MobileCompositeAgent;
 import net.xqhs.flash.core.monitoring.CentralMonitoringAndControlEntity;
+import net.xqhs.flash.core.node.clientApp.ClientAppInt;
+import net.xqhs.flash.core.node.clientApp.ClientCallbackInterface;
 import net.xqhs.flash.core.shard.AgentShard;
 import net.xqhs.flash.core.shard.AgentShardDesignation;
 import net.xqhs.flash.core.shard.ShardContainer;
@@ -51,6 +58,7 @@ import net.xqhs.flash.core.util.PlatformUtils;
 import net.xqhs.flash.rmi.NodeCLI;
 import net.xqhs.flash.rmi.NodeCLI.NodeInterface;
 import net.xqhs.util.logging.Unit;
+import net.xqhs.util.logging.UnitComponent;
 
 
 
@@ -67,7 +75,7 @@ import net.xqhs.util.logging.Unit;
  * 
  * @author Andrei Olaru
  */
-public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
+public class Node extends Unit implements Entity<Node>, NodeInterface, ClientAppInt, Remote, Serializable {
 	@Override
 	public Map<String, String> listEntities() {
 		return new HashMap<>();
@@ -180,7 +188,6 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 	public void configure1(MultiTreeMap configure1) {
 		this.nodeConfiguration = configure1;
 	}
-	private Unit unit;
 	/**
 	 * Creates a new {@link Node} instance.
 	 * 
@@ -231,7 +238,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 		setLoggerType(PlatformUtils.platformLogType());
 		setUnitName(EntityIndex.register(CategoryName.NODE.s(), this)).lock();
 		li("Active entitites:", activeEntities);
-		this.unit = new Unit(this);
+
 	}
 	private void initializeNodeConfiguration() {
 
@@ -325,18 +332,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 		});
 		return sendMessage(DeploymentConfiguration.CENTRAL_MONITORING_ENTITY_NAME, entities.toString());
 	}
-	public class Unit {
-		private Node parentNode;
 
-		public Unit(Node parentNode) {
-			if (parentNode == null) {
-				throw new IllegalArgumentException("Parent Node cannot be null");
-			}
-			this.parentNode = parentNode;
-		}
-
-
-	}
 	@Override
 	public boolean start() {
 
@@ -367,16 +363,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 		
 		if(getName() != null && registerEntitiesToCentralEntity())
 			lf("Entities successfully registered to control entity.");
-		
-		if(EXIT_ON_NO_ACTIVE_ENTITIES) {
-			activeMonitor = new Timer();
-			activeMonitor.schedule(new TimerTask() {
-				@Override
-				public void run() {
-					checkRunning();
-				}
-			}, INITIAL_ACTIVE_CHECK, 1000);
-		}
+
 
 		Timer timer = new Timer();
 		timer.schedule(new TimerTask() {
@@ -398,9 +385,9 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
 					entityLoader.loadEntity(Node.this, nodeConfiguration, entityConfiguration);*/
 
-					// Argument set for agent loading
 					String[] argset = ("-agent composite:AgentXX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one").split(" ");
-				//	String[] argset = ("-agent composite:AgentA -shard messaging par:val -shard EchoTesting -agent agentD parameter:one").split("");
+					// String[] argset = ("-agent composite:AgentA -shard messaging par:val -shard
+					// EchoTesting -agent agentD parameter:one").split("");
 //					MultiTreeMap rootTree = nodeConfiguration.getATree("root");
 //					if (rootTree == null) {
 //						rootTree = new MultiTreeMap();
@@ -419,8 +406,10 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 							rootTree,
 							new LinkedList<>(),
 							new HashMap<>(),
-							new UnitComponent("test")
+							new UnitComponent("ClientApp")
 					);
+
+					System.out.println("Agents added successfully in rootTree: " + rootTree);
 
 //					Map<String, Map<String, List<Loader<?>>>> loaders = new HashMap<>();
 //					Loader<?> defaultLoader = new SimpleLoader();
@@ -429,7 +418,7 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 //					EntityLoader entityLoader = new EntityLoader(loaders, defaultLoader, loaded);
 //					entityLoader.loadEntity(Node.this, rootTree, new MultiTreeMap());
 
-					System.out.println("Agents added successfully in rootTree: " + rootTree);
+
 
 
 
@@ -442,6 +431,28 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 
 
 		return true;
+	}
+
+	@Override
+	public void addAgentTree(String command) throws RemoteException {
+		try {
+			String[] args = command.split("\\s+");
+
+			MultiTreeMap rootTree = getRootTree();
+			if (rootTree == null) {
+				rootTree = new MultiTreeMap();
+				setRootTree(rootTree);
+			}
+			DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
+			deploymentConfig.readCLIArgs(Arrays.asList(args).iterator(),
+					new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, rootTree), rootTree,
+					new LinkedList<>(), new HashMap<>(), new UnitComponent("ClientApp"));
+
+			System.out.println("Agents added successfully in rootTree: " + rootTree);
+		} catch (Exception e) {
+			System.err.println("Error adding agents: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -662,7 +673,6 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 		notifyClients(agentName);
 	}
 
-
 	public synchronized void registerCallback(ClientCallbackInterface callback) throws RemoteException{
 		callbacks.add(callback);
 	}
@@ -691,6 +701,47 @@ public class Node extends Unit implements Entity<Node> , NodeInterface, Remote{
 			nodeConfiguration.addAgentToRootTree("root", rootTree, false, true);
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	public void printAllAgents() {
+
+		MultiTreeMap rootTree = nodeConfiguration.getATree("root");
+
+		if (rootTree == null || (rootTree.getSimpleNames().isEmpty() && rootTree.getHierarchicalNames().isEmpty())) {
+			System.out.println("There are no Agents in rootTree");
+			return;
+		}
+
+		System.out.println("The list of agents from rootTree:\n");
+
+		for (String agentName : rootTree.getSimpleNames()) {
+			System.out.println("[Agent] " + agentName);
+		}
+
+		for (String agentName : rootTree.getHierarchicalNames()) {
+			MultiTreeMap subTree = rootTree.getATree(agentName);
+			if (subTree != null) {
+				System.out.println("[MainAgent] " + agentName);
+				printAgentTree(agentName, subTree, 1);
+			}
+		}
+	}
+
+	private void printAgentTree(String parentName, MultiTreeMap subTree, int level) {
+		StringBuilder indent = new StringBuilder();
+		for (int i = 0; i < level * 4; i++) {
+			indent.append(" ");
+		}
+		for (String subAgent : subTree.getSimpleNames()) {
+			System.out.println(indent + "├── [Sub-Agent] " + subAgent);
+		}
+		for (String shard : subTree.getHierarchicalNames()) {
+			System.out.println(indent + "├── [Shard] " + shard);
+			MultiTreeMap deeperTree = subTree.getATree(shard);
+			if (deeperTree != null) {
+				printAgentTree(shard, deeperTree, level + 1);
+			}
 		}
 	}
 
