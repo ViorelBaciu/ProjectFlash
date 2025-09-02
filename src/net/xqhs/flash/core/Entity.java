@@ -284,4 +284,8 @@ public interface Entity<P extends Entity<?>>
 			throw new UnsupportedOperationException("not implemented.");
 		}
 	}
+
+//	boolean addGeneralContext(EntityProxy<? extends Entity<?>> context, MultiTreeMap agentConfiguration);
+//
+//	boolean addContext(EntityProxy<Pylon> context, MultiTreeMap agentConfiguration);
 }

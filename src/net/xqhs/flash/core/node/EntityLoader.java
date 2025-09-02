@@ -8,18 +8,29 @@ import net.xqhs.flash.core.DeploymentConfiguration;
 import net.xqhs.flash.core.Entity;
 import net.xqhs.flash.core.Loader;
 import net.xqhs.flash.core.SimpleLoader;
+import net.xqhs.flash.core.util.ClassFactory;
 import net.xqhs.flash.core.util.MultiTreeMap;
+import net.xqhs.flash.core.util.PlatformUtils;
+import net.xqhs.util.logging.Logger;
 
 public class EntityLoader {
     private static final String NAMESEP = DeploymentConfiguration.NAME_SEPARATOR;
     private final Map<String, Map<String, List<Loader<?>>>> loaders;
     private final Loader<?> defaultLoader;
     private final Map<String, Entity<?>> loaded;
+	private final ClassFactory classFactory;
 
-    public EntityLoader(Map<String, Map<String, List<Loader<?>>>> loaders, Loader<?> defaultLoader, Map<String, Entity<?>> loaded) {
+	public EntityLoader(Map<String, Map<String, List<Loader<?>>>> loaders, Map<String, Entity<?>> loaded,
+			Logger logger) {
+//        setUnitName("EntityLoader");
+//        setLoggerType(PlatformUtils.platformLogType());
         this.loaders = loaders;
-        this.defaultLoader = defaultLoader;
         this.loaded = loaded;
+		this.classFactory = PlatformUtils.getClassFactory();
+
+		// Initialize the default loader
+		this.defaultLoader = new SimpleLoader();
+		this.defaultLoader.configure(null, logger, this.classFactory);
     }
 
     /**

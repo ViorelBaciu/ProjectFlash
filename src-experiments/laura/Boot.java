@@ -23,15 +23,19 @@ public class Boot
 //		test_args += " -agent AgentA classpath:AgentPingPong sendTo:AgentB";
 //		test_args += " -agent AgentB classpath:AgentPingPong";
 
-		test_args += " -package laura";
-		test_args += " -node nodeA";
-		test_args += " -support ros classpath:net.xqhs.flash.ros.RosSupport connect-to:ws://localhost:9090";
-		test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentA2 sendTo:agentB2";
-		test_args += " -agent agentA2 classpath:AgentPingPong";
-		test_args += " -node nodeB";
-		test_args += " -support ros classpath:net.xqhs.flash.ros.RosSupport connect-to:ws://localhost:9090";
-		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentB2";
-		test_args += " -agent agentB2 classpath:AgentPingPong";
+//		test_args += " -package laura";
+//		test_args += " -node nodeA";
+//		test_args += " -support ros classpath:net.xqhs.flash.ros.RosSupport connect-to:ws://localhost:9090";
+//		test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentA2 sendTo:agentB2";
+//		test_args += " -agent agentA2 classpath:AgentPingPong";
+//		test_args += " -node nodeB";
+//		test_args += " -support ros classpath:net.xqhs.flash.ros.RosSupport connect-to:ws://localhost:9090";
+//		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentB2";
+//		test_args += " -agent agentB2 classpath:AgentPingPong";
+		test_args += " -node nodeC";
+		test_args += " -pylon local:";
+		// test_args += " -pylon local:main-pylong use-thread";
+		test_args += " -agent AgentA1";
 		
 		FlashBoot.main(test_args.split(" "));
 	}

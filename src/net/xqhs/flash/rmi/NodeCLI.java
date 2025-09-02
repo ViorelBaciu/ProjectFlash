@@ -1,7 +1,6 @@
 package net.xqhs.flash.rmi;
 
 
-import java.rmi.RemoteException;
 import java.util.Map;
 
 import net.xqhs.flash.core.Entity;
@@ -25,7 +24,7 @@ public class NodeCLI {
 		 */
 		boolean stopEntity(String entityName);
 
-		void addAgent(String agentName, String shardName) throws RemoteException;
+		// void addAgent(String agentName, String shardName) throws RemoteException;
 
 	}
 

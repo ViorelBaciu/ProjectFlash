@@ -46,6 +46,7 @@ public class Boot
 		// notice how the name of the shard does not necessarily need to contain "Shard", as it is handled by autoFind
 		args += " -agent composite:AgentA -shard messaging -shard PingTest otherAgent:AgentB -shard EchoTesting";
 		args += " -agent composite:AgentB -shard messaging -shard PingBackTest -shard EchoTesting";
+		args += " -agent composite:agentDX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one";
 		
 		FlashBoot.main(args.split(" "));
 

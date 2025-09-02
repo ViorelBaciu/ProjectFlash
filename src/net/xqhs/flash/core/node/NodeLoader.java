@@ -11,7 +11,10 @@
  ******************************************************************************/
 package net.xqhs.flash.core.node;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import net.xqhs.flash.core.CategoryName;
 import net.xqhs.flash.core.DeploymentConfiguration;
@@ -45,7 +48,10 @@ public class NodeLoader extends Unit implements Loader<Node> {
 		setLoggerType(PlatformUtils.platformLogType());
 	}
 
-	
+	private static Map<String, Map<String, List<Loader<?>>>> loaders = new LinkedHashMap<>();
+	public static Map<String, Entity<?>> loaded = new LinkedHashMap<>();
+	public static Map<String, Entity<?>> loadedEntities;
+	public static Map<String, Map<String, List<Loader<?>>>> configuredLoaders;
 	/**
 	 * Loads a deployment starting from command line arguments.
 	 * <p>
@@ -90,11 +96,14 @@ public class NodeLoader extends Unit implements Loader<Node> {
 			else
 				le("node not loaded.");
 		}
+
 		lf("[] nodes loaded.", Integer.valueOf(nodes.size()));
 		doExit();
 		return nodes;
+
 	}
 	
+
 	@Override
 	public Node load(MultiTreeMap configuration) {
 		return load(configuration, null, null);
@@ -183,7 +192,7 @@ public class NodeLoader extends Unit implements Loader<Node> {
 		}
 		else
 			li("No loaders configured.");
-		
+		// loader created to put the nodeConfig ( with entire configuration )
 		Loader<?> defaultLoader = new SimpleLoader();
 		defaultLoader.configure(null, getLogger(), classFactory);
 		if(loaders.containsKey(null)) {
@@ -208,18 +217,27 @@ public class NodeLoader extends Unit implements Loader<Node> {
 		nodeConfiguration.addFirstValue(SimpleLoader.CLASSPATH_KEY, nodecp);
 		lf("Trying to load node using default loader [], from classpath []", defaultLoader.getClass().getName(),
 				CategoryName.NODE.s(), nodecp);
+		// test
 		Node node = (Node) defaultLoader.load(nodeConfiguration);
+
 		if(node != null) {
 			node.configure1(nodeConfiguration);
+//			node.setDeploymentConfig(this.deploymentConfiguration);
+//			if (this.deploymentConfiguration != null) {
+//				node.initialize(this.loaded, this.loaders);
+//			}
 		} else {
 			le("Could not load [][].", nodeCatName, nodeName);
 			return null;
 		}
 
+
 		Map<String, Entity<?>> loaded = new LinkedHashMap<>();
+		// node id
 		String node_local_id = nodeConfiguration.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE);
 		loaded.put(node_local_id, node);
 
+		// pylon
 		String toLoad = nodeConfiguration.getSingleValue(CategoryName.LOAD_ORDER.s());
 		if(toLoad == null || toLoad.trim().length() == 0)
 			li("Nothing to load");
@@ -412,6 +430,10 @@ public class NodeLoader extends Unit implements Loader<Node> {
 	@Override
 	public boolean preload(MultiTreeMap configuration, List<EntityProxy<? extends Entity<?>>> context) {
 		return preload(configuration);
+	}
+
+	public static Map<String, Map<String, List<Loader<?>>>> getLoaders() {
+		return loaders;
 	}
 
 }

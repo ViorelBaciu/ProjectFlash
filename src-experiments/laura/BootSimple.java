@@ -20,9 +20,9 @@ public class BootSimple {
 	/**
 	 * Performs test.
 	 * 
-	 * @param args
-	 *            - not used.
+	 * @param args - not used.
 	 */
+	
 	public static void main(String[] args) {
 		String test_args = "";
 		
@@ -31,11 +31,17 @@ public class BootSimple {
 		// ce merge acum:
 		test_args += " -node nodeA";
 		test_args += " -pylon local:";
-		test_args += " -agent AgentA1";
-		// test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentXX";
-		test_args += " -agent agentA2 classpath:AgentPingPong";
-//		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentA2";
-//		test_args += " -agent agentB2 classpath:AgentPingPong";
+	//	test_args += " -pylon local:main-pylong use-thread";
+	test_args += " -agent AgentA1";
+	test_args += " -node nodeB";
+	test_args += " -pylon local:";
+	// test_args += " -pylon local:main-pylong use-thread";
+	test_args += " -agent AgentB1";
+//		System.out.println("Done.");
+	// test_args += " -agent agentA1 classpath:AgentPingPong sendTo:agentXX";
+//		test_args += " -agent agentA2 classpath:AgentPingPong";
+//	test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentA2";
+	test_args += " -agent agentB2 classpath:AgentPingPong";
 		
 //		test_args += " -node nodeB";
 //		test_args += " -pylon local:";
@@ -50,9 +56,9 @@ public class BootSimple {
 //		test_args += " -node nodeG";
 //		test_args += " -pylon local:";
 //		test_args += " -agent agentC1 classpath:AgentPingPong sendTo:agentC2";
-//		test_args += " -agent agentC2 classpath:AgentPingPong";
+	test_args += " -agent agentC2 classpath:AgentPingPong";
 //		test_args += " -agent agentB1 classpath:AgentPingPong sendTo:agentB2";
-//		test_args += " -agent agentB2 classpath:AgentPingPong";
+	test_args += " -agent agentB2 classpath:AgentPingPong";
 
 //		test_args += " -node nodeB";
 //		test_args += " -pylon local:";

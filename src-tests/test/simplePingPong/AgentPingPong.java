@@ -41,7 +41,7 @@ public class AgentPingPong extends Unit implements Agent {
 	/**
 	 * The name of the component parameter that contains the id of the other agent.
 	 */
-	protected static final String	OTHER_AGENT_PARAMETER_NAME	= "sendTo";
+	public static final String OTHER_AGENT_PARAMETER_NAME = "sendTo";
 	/**
 	 * Endpoint element for this shard.
 	 */
@@ -113,6 +113,7 @@ public class AgentPingPong extends Unit implements Agent {
 		return true;
 	}
 	
+
 	/**
 	 * @param event
 	 *            - the event received.
@@ -127,6 +128,7 @@ public class AgentPingPong extends Unit implements Agent {
 		}
 		return false;
 	}
+
 
 	@Override
 	public boolean stop() {
@@ -212,4 +214,17 @@ public class AgentPingPong extends Unit implements Agent {
 	protected void lf(String message, Object... arguments) {
 		super.lf(message, arguments);
 	}
+
+//	@Override
+//	public boolean addContext(EntityProxy<Pylon> context) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+//
+//	@Override
+//	public boolean addGeneralContext(EntityProxy<? extends Entity<?>> context) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
+
 }

@@ -27,7 +27,7 @@ public class AgentPingPong extends Unit implements Agent {
 	/**
 	 * The name of the component parameter that contains the id of the other agent.
 	 */
-	protected static final String	OTHER_AGENT_PARAMETER_NAME	= "sendTo";
+	private static final String	OTHER_AGENT_PARAMETER_NAME	= "sendTo";
 	/**
 	 * Endpoint element for this shard.
 	 */
@@ -63,8 +63,8 @@ public class AgentPingPong extends Unit implements Agent {
 	public AgentPingPong(MultiTreeMap configuration) {
 		agentName = configuration.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
 		setUnitName(agentName);// .setLogLevel(Level.ALL);
-		if(configuration.isSet(OTHER_AGENT_PARAMETER_NAME))
-			otherAgents = configuration.getValues(OTHER_AGENT_PARAMETER_NAME);
+		if(configuration.isSet(getOtherAgentParameterName()))
+			otherAgents = configuration.getValues(getOtherAgentParameterName());
 		msgShard = new RosPylon.SimpleLocalMessaging();
 		msgShard.addContext(new ShardContainer() {
 			@Override
@@ -84,9 +84,36 @@ public class AgentPingPong extends Unit implements Agent {
 		});
 		lf("Agent started.");
 	}
-	
+
 	@Override
 	public boolean start() {
+		if (otherAgents != null) {
+			startPingTimer();
+		}
+		return true;
+	}
+
+	public void updateConfiguration(MultiTreeMap configuration) {
+		// try to stop the timer
+		if (pingTimer != null) {
+			pingTimer.cancel();
+			pingTimer = null;
+		}
+		// re-read the 'sendTo'
+		if (configuration.isSet(getOtherAgentParameterName())) {
+			otherAgents = configuration.getValues(getOtherAgentParameterName());
+		} else {
+			otherAgents = null;
+		}
+		// if the 'sendTo' is not empty, start with new config
+		if (otherAgents != null) {
+			// startPingerTime();
+			start();
+		}
+	}
+
+//	@Override
+	private void startPingTimer() {
 		if(otherAgents != null) {
 			pingTimer = new Timer();
 			pingTimer.schedule(new TimerTask() {
@@ -112,12 +139,13 @@ public class AgentPingPong extends Unit implements Agent {
 						System.out.println("Time since first message: " + totalTime);
 					}
 					else {
-						return;
+						// return;
+						pingTimer.cancel();
 					}
 				}
 			}, PING_INITIAL_DELAY, PING_PERIOD);
 		}
-		return true;
+		// return true;
 	}
 	
 	/**
@@ -183,5 +211,9 @@ public class AgentPingPong extends Unit implements Agent {
 	@Override
 	protected void lf(String message, Object... arguments) {
 		super.lf(message, arguments);
+	}
+
+	public static String getOtherAgentParameterName() {
+		return OTHER_AGENT_PARAMETER_NAME;
 	}
 }

@@ -37,6 +37,8 @@ public class FlashBoot
 	{
 		MasterLog.setLogLevel(Level.ALL);
 
+		NodeLoader nodeLoader = new NodeLoader();
+
 		// stream = new ByteArrayOutputStream();
 		// GlobalLogWrapper.setLogStream(stream);
 		List<Node> nodes = new NodeLoader().loadDeployment(Arrays.asList(args));
