@@ -11,6 +11,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -169,54 +170,21 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 					showActivePorts();
 				} else if (command.equalsIgnoreCase("just show")) {
 					currentNodeBridge.printAllAgents2();
-//				} else if (command.startsWith("-agent")) {
-//					try {
-//						String[] parts = command.split(" ");
-//						if (parts.length == 4) {
-//							String agentName = parts[1];
-//							String agentType = parts[2];
-//							String agentClass = parts[3];
-//							// Apelul metodei addNewAgent din clasa Node
-//							currentNodeBridge.addNewAgent(agentName, agentType, agentClass);
-//						} else {
-//							System.out.println("Comanda 'add-agent' necesita 3 parametri: nume, tip, clasa.");
-//						}
-//					} catch (Exception e) {
-//						System.out.println("Eroare la adaugarea agentului: " + e.getMessage());
-//					}
-//				} else if (command.startsWith("-agent ")) {
-//					try {
-//						String[] parts = command.split(" ");
-//						if (parts.length >= 5) {
-//							String nodeName = parts[1];
-//							String pylonName = parts[2];
-//							String agentName = parts[3];
-////							String agentClass = parts[4];
-//							StringBuilder agentArgs = new StringBuilder();
-//							for (int i = 4; i < parts.length; i++) {
-//								agentArgs.append(parts[i]).append(" ");
-//							}
-//							String agentClass = agentArgs.toString().trim();
-//
-//							// Apelul metodei de pe obiectul de la distanță (RMI)
-//							// Atentie: Aici am presupus ca nu mai ai parametrul agentType
-//
-//							// String fullAgentClassPath = "test.simplePingPong." + agentClass;
-//
-//							currentNodeBridge.addNewAgent(nodeName, pylonName, agentName, "simple", agentClass);
-//
-//							System.out.println("The agent '" + agentName + "' has been added");
-//						} else {
-//							System.out.println(
-//									"The comand 'add-agent' require 4 parameters: <node> <pylon> <nume> <clasa>");
-//
-//							// Command
-//							// add-agent nodeA local: AgentNou AgentPingPong
-//						}
-//					} catch (Exception e) {
-//						System.out.println("Error at the add of agents: " + e.getMessage());
-//					}
-	            } else if (command.startsWith("change port with ")) {
+//				
+				} else if (command.equalsIgnoreCase("list-agents")) {
+					System.out.println("Entities registered on the node:");
+					Map<String, String> entities = currentNodeBridge.listEntities();
+					if (entities.isEmpty()) {
+						System.out.println("No entities found on this node.");
+					} else {
+						System.out.println("Entities and their status on the node:");
+
+						// Iterate through the Map to print each entity and its status
+						for (Map.Entry<String, String> entry : entities.entrySet()) {
+							System.out.println("- " + entry.getKey() + " | Status: " + entry.getValue());
+						}
+					}
+				} else if (command.startsWith("change port with ")) {
 					try {
 						String[] parts = command.split(" ");
 						int newPort = Integer.parseInt(parts[parts.length - 1]);
@@ -247,11 +215,21 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 					} catch (Exception e) {
 						System.err.println("Error processing command: " + e.getMessage());
 					}
+				} else if (command.startsWith("list of commands")) {
+					ClientApp currentApp = new ClientApp(null,null);
+					currentApp.printCommand(command);
+					
 				} else if (command.startsWith("run-boot ")) {
-
 					String dynamicConfg = command.substring("run-boot".length());
 					ClientApp tempClientApp = new ClientApp(null, null);
 					tempClientApp.deployDynamicConfiguration(dynamicConfg);
+					try {
+						System.out.println("Waits 10 seconds before continuing with the next command ");
+						Thread.sleep(10000);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						System.err.println("The wait has been interrupted");
+					}
 
 				} else if (command.startsWith("run-boot2")) {
 					String dynamicConfig2 = command.substring("run-boot2".length());
@@ -271,8 +249,6 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 					} catch (RemoteException e) {
 						System.err.println("Error to stop the node");
 					}
-				} else if (command.startsWith("exit")) {
-					break;
 				} else {
 					System.out.println("Invalid command format. Example: -agent composite:AgentX -shard messaging");
 				}
@@ -286,7 +262,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 	}
 
 	private static int findNodeConexion() {
-		int[] potentialPorts = { 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106 };
+		int[] potentialPorts = { 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110 };
 		for (int port : potentialPorts) {
 			try {
 				Registry registry = LocateRegistry.getRegistry("localhost", port);
@@ -321,7 +297,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 //			}
 //		}
 		List<Integer> activePorts = new ArrayList<>();
-		int[] potentialPorts = { 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106 };
+		int[] potentialPorts = { 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110 };
 
 		for (int port : potentialPorts) {
 			try {
@@ -335,7 +311,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 		if (activePorts.isEmpty()) {
 			System.out.println("No active ports found");
 		} else {
-			System.out.print("List of ports that are in use");
+			System.out.print("List of ports that are in use: ");
 			activePorts.forEach(p -> System.out.print(p + "; "));
 			System.out.println("\nYour current port: " + currentPort);
 		}
@@ -433,7 +409,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 			Process process = processBuilder.start();
 
 			System.out.println("A new instance of FlashBoot has been launched in a separate process.");
-			System.out.println("The process is running with classpath: " + classpath);
+
 		} catch (IOException e) {
 			System.err.println("Error of the new process: " + e.getMessage());
 			e.printStackTrace();
@@ -472,6 +448,22 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 			System.err.println("" + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+
+	public static void printCommand(String commands) {
+
+		System.out.println(" ");
+		System.out.println(" -add ");
+		System.out.println(" -run-boot ");
+		System.out.println(" -run-boot2 ");
+		System.out.println(" list of ports ");
+		System.out.println(" change port with ");
+		System.out.println(" list-agents -> show the entities ");
+		System.out.println(" view-agents -> show the configNode ");
+		System.out.println(" run-clientApp ");
+		System.out.println(" stop-node ");
+		System.out.println(" exit ");
+		System.out.println(" ");
 	}
 
 }

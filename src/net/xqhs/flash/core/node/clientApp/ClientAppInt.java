@@ -2,6 +2,7 @@ package net.xqhs.flash.core.node.clientApp;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Map;
 
 public interface ClientAppInt extends Remote {
 	void addAgentTree(String command) throws RemoteException;
@@ -12,6 +13,8 @@ public interface ClientAppInt extends Remote {
 
 	public boolean stop() throws RemoteException;
 	// List<Integer> getActivePorts() throws RemoteException;
+
+	public Map<String, String> listEntities() throws RemoteException;
 
 //	void addNewAgent(String nodeName, String pylonName, String agentName, String agentType, String agentClass)
 //			throws RemoteException;
