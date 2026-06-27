@@ -17,7 +17,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import net.xqhs.flash.FlashBoot;
+import net.xqhs.flash.core.agent.AgentWave;
 import net.xqhs.flash.core.node.Node;
+import net.xqhs.flash.core.support.AbstractMessagingShard;
 import net.xqhs.flash.core.util.MultiTreeMap;
 
 public class ClientApp extends UnicastRemoteObject implements ClientCallbackInterface, Serializable, Remote {
@@ -136,24 +138,12 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 
 	public static void main(String[] args) {
 		try {
-//            MultiTreeMap nodeConfiguration =  new MultiTreeMap();
-//
-//            StartServer startServer = new StartServer(nodeConfiguration);
-//            Node node = startServer.startServer();
-
-//                nodeConfiguration = node.getNodeConfiguration();
-//                ClientApp clientApp = ClientApp.getInstance(node, nodeConfiguration);
 			int initialPort = findNodeConexion();
 			if (initialPort == -1) {
 				System.out.println("Could not connect to any active node.");
 			}
 			currentPort = initialPort;
 			System.out.println("Connected to NodeService on port: " + currentPort);
-
-			// Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-//			// remoteNode = (Node) registry.lookup("Node");
-//			System.out.println("Connected to RMI registry.");
-			// ClientAppInt nodeBridge = (ClientAppInt) registry.lookup("NodeService");
 
 			Scanner scanner = new Scanner(System.in);
 			while (true) {
@@ -169,7 +159,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 				} else if (command.equalsIgnoreCase("list of ports")) {
 					showActivePorts();
 				} else if (command.equalsIgnoreCase("just show")) {
-					currentNodeBridge.printAllAgents2();
+					// currentNodeBridge.printAllAgents2();
 //				
 				} else if (command.equalsIgnoreCase("list-agents")) {
 					System.out.println("Entities registered on the node:");
@@ -286,16 +276,6 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 	}
 
 	private static void showActivePorts() {
-//		if (currentNodeBridge != null) {
-//			try {
-//				List<Integer> ports = currentNodeBridge.getActivePorts();
-//				System.out.print("List of ports that are in use: ");
-//				ports.forEach(p -> System.out.print(p + "; "));
-//				System.out.println("\nYour current port: " + currentPort);
-//			} catch (Exception e) {
-//				System.err.println("Could not retrieve active ports" + e.getMessage());
-//			}
-//		}
 		List<Integer> activePorts = new ArrayList<>();
 		int[] potentialPorts = { 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110 };
 
@@ -316,55 +296,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 			System.out.println("\nYour current port: " + currentPort);
 		}
 	}
-    
-//    public static void main(String[] args) {
-//		try {
-////            MultiTreeMap nodeConfiguration =  new MultiTreeMap();
-////
-////            StartServer startServer = new StartServer(nodeConfiguration);
-////            Node node = startServer.startServer();
-//
-////                nodeConfiguration = node.getNodeConfiguration();
-////                ClientApp clientApp = ClientApp.getInstance(node, nodeConfiguration);
-//			
-//			
-//			Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-//			// remoteNode = (Node) registry.lookup("Node");
-//			System.out.println("Connected to RMI registry.");
-//			ClientAppInt nodeBridge = (ClientAppInt) registry.lookup("NodeService");
-//
-//			Scanner scanner = new Scanner(System.in);
-//			while (true) {
-//				System.out.print("Enter command: ");
-//				String command = scanner.nextLine().trim();
-//
-//				if (command.equalsIgnoreCase("exit")) {
-//					break;
-//				} else if (command.startsWith("-agent")) {
-//					nodeBridge.addAgentTree(command);
-//				} else if (command.equalsIgnoreCase("view-agents")) {
-//					nodeBridge.printAllAgents();
-//				} else if (command.equalsIgnoreCase("show me the list of ports")) {
-//			//		showActivePorts();
-//				} else if (command.startsWith("change the existing port with port ")) {
-//					try {
-//						String[] parts = command.splits(" ");
-//						int newPort = Integer.parseInt(parts[parts.length -1 ]);
-//						connectToNode(newPort);
-//					} catch (NumberFormatException e) {
-//						System.out.println("Invalid port number");
-//					}
-//				} else {
-//					System.out.println("Invalid command format. Example: -agent composite:AgentX -shard messaging");
-//				}
-//			}
-//			scanner.close();
-//
-//		} catch (Exception e) {
-//			System.err.println("Client exception: " + e.toString());
-//			e.printStackTrace();
-//		}
-//	}
+
 	public void deployDynamicConfiguration(String dynamicConfigLine) {
 		String[] args = dynamicConfigLine.split("\\s+");
 
@@ -376,13 +308,9 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 			String javaHome = System.getProperty("java.home");
 			String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
 
-			// Get the full classpath string from the current JVM.
 			String classpath = System.getProperty("java.class.path");
-
-			// The fully qualified class name of the main class.
 			String mainClass = "net.xqhs.flash.FlashBoot";
 
-			// Create a list to hold the command and its arguments.
 			List<String> command = new ArrayList<>();
 			command.add("gnome-terminal");
 			command.add("--");
@@ -391,21 +319,14 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 			command.add(classpath);
 			command.add(mainClass);
 
-			// Add the dynamic arguments from the user's input.
 			String[] dynamicArgs = dynamicConfigLine.split("\\s+");
 			command.addAll(Arrays.asList(dynamicArgs));
 
-			// Create the ProcessBuilder with the command list.
 			ProcessBuilder processBuilder = new ProcessBuilder(command);
 
-			// Redirect the new process's I/O to the current console.
-			// processBuilder.inheritIO();
-
-			// Optional but recommended: set the working directory to the project's root.
 			File projectRoot = new File("/home/viorel/eclipse-workspace/FlashMultiAgentSystem");
 			processBuilder.directory(projectRoot);
 
-			// Start the new process.
 			Process process = processBuilder.start();
 
 			System.out.println("A new instance of FlashBoot has been launched in a separate process.");
@@ -453,7 +374,7 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 	public static void printCommand(String commands) {
 
 		System.out.println(" ");
-		System.out.println(" -add ");
+		System.out.println(" -agent ");
 		System.out.println(" -run-boot ");
 		System.out.println(" -run-boot2 ");
 		System.out.println(" list of ports ");
@@ -464,6 +385,35 @@ public class ClientApp extends UnicastRemoteObject implements ClientCallbackInte
 		System.out.println(" stop-node ");
 		System.out.println(" exit ");
 		System.out.println(" ");
+	}
+
+	public void receiveMessage(String source, String destination, String content) throws RemoteException {
+		System.out.println("Message received via RMI from " + source + " for " + destination);
+
+		// Aici trebuie să implementezi logica de direcționare a mesajului către agentul
+		// țintă.
+		// Poți folosi un mecanism similar cu cel din `WebSocketMessagingShard` sau o
+		// metodă
+		// internă a nodului. Un exemplu ar fi să apelezi o metodă din clasa `Node`
+		// care gestionează livrarea mesajelor interne.
+
+		// Exemplu ipotetic de logica de distribuție:
+		AgentWave wave = new AgentWave(content, source, destination);
+
+		// În loc să-l livrezi direct, ar trebui să-l dai mai departe shard-ului de
+		// mesagerie
+		// sau unei metode din `Node` care se ocupă de asta.
+
+		// Caută shard-ul de mesagerie al nodului tău și livrează-i mesajul.
+		// Poate ai un câmp `messagingShard` în clasa `Node` sau `ClientApp`.
+		AbstractMessagingShard messagingShard = null; // Obține shard-ul corect
+
+		if (messagingShard != null) {
+			messagingShard.signalAgentEvent(wave);
+			System.out.println("Message forwarded to local agents.");
+		} else {
+			System.err.println("Could not find a messaging shard to deliver the message.");
+		}
 	}
 
 }

@@ -79,9 +79,11 @@ public class AgentPingPong extends Unit implements Agent {
 	 */
 	public AgentPingPong(MultiTreeMap configuration) {
 		agentName = configuration.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
+
 		setUnitName(agentName);// .setLogLevel(Level.ALL);
 		if(configuration.isSet(OTHER_AGENT_PARAMETER_NAME))
 			otherAgents = configuration.getValues(OTHER_AGENT_PARAMETER_NAME);
+
 	}
 	
 	@Override

@@ -16,6 +16,7 @@ public interface ClientAppInt extends Remote {
 
 	public Map<String, String> listEntities() throws RemoteException;
 
+
 //	void addNewAgent(String nodeName, String pylonName, String agentName, String agentType, String agentClass)
 //			throws RemoteException;
 //
@@ -25,5 +26,6 @@ public interface ClientAppInt extends Remote {
 	 * void activatePingPong(String nodeName, String pylonName, String
 	 * pingerAgentName, String pongerAgentName) throws RemoteException;
 	 */
+	void receiveMessage(String source, String destination, String content) throws RemoteException;
 
 }

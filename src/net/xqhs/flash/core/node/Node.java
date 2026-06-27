@@ -356,11 +356,10 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 
 					StartServer startServer = new StartServer(nodeConfiguration);
 					startServer.startServer();
-
+//
 //					String[] argset = ("-node nodeA -pylon local: -agent agentC2 -shard messaging classpath:AgentPingPong sendTo:agentB2")
 ////							-node nodeA -pylon local: -agent composite:agentDX -shard messaging par:val -shard EchoTesting -agent agentCV parameter:one
 //							.split(" ");
-//
 //
 //					MultiTreeMap rootTree = getRootTree();
 //					if (rootTree == null) {
@@ -372,9 +371,9 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 //					deploymentConfig.readCLIArgs(Arrays.asList(argset).iterator(),
 //							new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, rootTree),
 //							rootTree, new LinkedList<>(), new HashMap<>(), new UnitComponent("ClientApp"));
-					// this.registerEntity(argset, messagingShard, argset);
-
-					// System.out.println("Agents added successfully in rootTree: " + rootTree);
+//					// this.registerEntity(argset, messagingShard, argset);
+//
+//					System.out.println("Agents added successfully in rootTree: " + rootTree);
 
 				} catch (Exception e) {
 					System.err.println("Error in TimerTask: " + e.getMessage());
@@ -388,36 +387,17 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 		return true;
 	}
 
-//	@Override
-//	public void addAgentTree(String command) throws RemoteException {
-//		try {
-//			String[] args = command.split("\\s+");
-//
-//			MultiTreeMap rootTree = getRootTree();
-//			if (rootTree == null) {
-//				rootTree = new MultiTreeMap();
-//				setRootTree(rootTree);
-//			}
-//			DeploymentConfiguration deploymentConfig = new DeploymentConfiguration();
-//			deploymentConfig.readCLIArgs(Arrays.asList(args).iterator(),
-//					new DeploymentConfiguration.CtxtTriple(CategoryName.DEPLOYMENT.s(), null, rootTree), rootTree,
-//					new LinkedList<>(), new HashMap<>(), new UnitComponent("ClientApp"));
-//
-//			System.out.println("Agents added successfully in rootTree: " + rootTree);
-//		} catch (Exception e) {
-//			System.err.println("Error adding agents: " + e.getMessage());
-//			e.printStackTrace();
-//		}
-//	}
+	protected Map<String, String> name_ids = new HashMap<>();
+	public static final String NAME_ATTRIBUTE_NAME = "name";
+	protected List<String> autoCreated = new LinkedList<>();
 
-
+	public static final String LOAD_ORDER_SEPARATOR = ";";
 	@Override
 
 	public void addAgentTree(String command) throws RemoteException {
 		try {
 
-			System.out.println("Entitățile active actuale pentru acest nod sunt: " + this.activeEntities);
-			// 1. Parsare comanda și extragere configurație agent
+			System.out.println("The active entities for this node : " + this.activeEntities);
 			String[] args = command.split("\\s+");
 			MultiTreeMap tempConfig = new MultiTreeMap();
 //			this.deploymentConfig.readCLIArgs(Arrays.asList(args).iterator(),
@@ -426,40 +406,47 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 			this.deploymentConfig.readCLIArgs(Arrays.asList(args).iterator(),
 					new DeploymentConfiguration.CtxtTriple(CategoryName.NODE.s(), null, tempConfig), tempConfig,
 					new LinkedList<>(), new HashMap<>(), new UnitComponent("ClientApp"));
-			// Extrage corect arborele de configurare al agentului
 
-			// MultiTreeMap agentCategoryTree =
-			// tempConfig.getSingleTree(CategoryName.AGENT.s());
-//			if (agentCategoryTree == null) {
-//				le("Failed to extract agent configuration from command: " + command);
-//			}
+			// check this one
+			this.getNodeConfiguration().getKeys();
+
+			this.nodeConfiguration.addAll(command, autoCreated);
+			autoCreated.addAll((this.getNodeConfiguration()).getKeys());
+
+			// this.deploymentConfig.loadConfiguration(null, EXIT_ON_NO_ACTIVE_ENTITIES,
+			// null);
+
 			// nodeConfiguration.getDeepValue("agent", names);
 			MultiTreeMap agentCategoryTree2 = tempConfig.getSingleTree(CategoryName.NODE.s());
-			// nodeConfiguration.getTrees("nodeB");
-			nodeConfiguration.addOneTree("agent", agentCategoryTree2);
+			// preiau deplyoment
+//			this.nodeConfiguration.getSingleTree(CategoryName.DEPLOYMENT.s());
+//
+//			this.nodeConfiguration.getDeepValue(CategoryName.LOAD_ORDER.s(),
+//					CategoryName.PYLON.s() + LOAD_ORDER_SEPARATOR + CategoryName.AGENT.s());
+//
+//			//
+//
+//			this.configure1(tempConfig);
+
+			// nodeConfiguration.addOneTree("agent", agentCategoryTree2);
 			// nodeConfiguration.addOneTreeGet("name", agentCategoryTree2);
 
 			MultiTreeMap s2 = nodeConfiguration.getSingleTree(CategoryName.NODE.s());
 
 			MultiTreeMap agentCategoryTree22 = tempConfig.getSingleTree(CategoryName.AGENT.s());
+
 			nodeConfiguration.addOneTreeGet("local:", agentCategoryTree22);
+
 			System.out.println(this.getNodeConfiguration());
 			MultiTreeMap agentTree = null;
-//			for (String key : tempConfig.getHierarchicalNames()) {
-//				// Folosește getFirstTree() pentru a obține primul sub-arbore cu acel nume
-//				agentTree = tempConfig.getFirstTree(key);
-//				if (agentTree != null) {
-//					break; // Am găsit agentul, ieșim din buclă.
-//				}
-//			}
 
-			// 2. Adaugă configurația agentului la arborele nodului
+			// cheie "pylon" -> getSingleTree().
+			// configurația agentului la arborele nodului
 //			this.getNodeConfiguration().addAgentToRootTree(
 //					agentTree.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME), agentTree,
 //					messagingShardRegistered, isRunning());
 
-			// 3. Obține loader-ul implicit
-			// Aici este logica din getDefaultLoader()
+			// loader-ul implicit
 			Map<String, Map<String, List<Loader<?>>>> loaders = new LinkedHashMap<>();
 
 			MultiTreeMap agentCategoryTree = tempConfig.getSingleTree(CategoryName.AGENT.s());
@@ -478,26 +465,35 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 
 			agentCategoryTree22.addAll("package", packages);
 			agentCategoryTree22.addSingleValue("load_order", toLoad2);
+
 			nodeConfiguration.addAll("package", packages);
 			nodeConfiguration.addSingleValue("load_order", toLoad2);
 			// this.registerEntity(CategoryName.AGENT.s(), null, toLoad2);
 			// Configurezi ShardMessageing
 			// this.registerEntitiesToCentralEntity();
 
-			// ---- nu va merge ca nu ai context
+			// nu va merge fara context
+
 			Entity<?> newAgent = defaultLoader.load(agentCategoryTree22, null, null);
+
 			// this.configure1(nodeConfiguration);
-			Node node = (Node) defaultLoader.load(nodeConfiguration);
+
+			this.nodeConfiguration.getSingleTree(CategoryName.DEPLOYMENT.s());
+
+			// Node node = (Node) defaultLoader.load(nodeConfiguration);
+			Node node = this;
+
 			Map<String, Entity<?>> loaded = new LinkedHashMap<>();
+			List<MessagingPylonProxy> messagingProxies = new LinkedList<>();
 
 			String NAMESEP = DeploymentConfiguration.NAME_SEPARATOR;
 			for (String agentName : agentCategoryTree.getHierarchicalNames()) {
 				// MultiTreeMap agentTree = null;
 				for (String key : agentCategoryTree.getHierarchicalNames()) {
-					// Folosește getFirstTree() pentru a obține primul sub-arbore cu acel nume
+					// getFirstTree() pentru a obține primul sub-arbore cu acel nume
 					agentTree = agentCategoryTree.getFirstTree(key);
 					String entity = null, kind = null;
-					if (name.contains(NAMESEP)) {
+					if (this.name != null && this.name.contains(NAMESEP)) {
 						entity = name.split(NAMESEP)[0];
 						kind = name.split(NAMESEP, 2)[1];
 					}
@@ -508,13 +504,25 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 					continue;
 				}
 
+
+				String kind = agentTree.getFirstValue(DeploymentConfiguration.KIND_ATTRIBUTE_NAME);
+				String name = agentTree.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
+				String cp = Loader.autoFind(classFactory, packages, agentTree.get(SimpleLoader.CLASSPATH_KEY), kind,
+						name, CategoryName.AGENT.s(), new LinkedList<>());
+				String local_id = agentTree.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE);
+				if (cp != null) {
+					agentTree.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
+				}
+
+				List<String> checkedPaths = new LinkedList<>();
 				String toLoad = nodeConfiguration.getSingleValue(CategoryName.LOAD_ORDER.s());
 				for (String catName : toLoad.split(DeploymentConfiguration.LOAD_ORDER_SEPARATOR)) {
 					CategoryName cat = CategoryName.byName(catName);
 //			List<MultiTreeMap> entities = DeploymentConfiguration.filterCategoryInContext(agentTree,
 //					catName, null);
-					String kind = null, id = null;
-					if (name != null && name.contains(NAMESEP)) { // if name is can be split, split it into kind and id
+					// String kind = null;
+					String id = null;
+					if (name != null && name.contains(NAMESEP)) {
 						kind = name.split(NAMESEP)[0];
 						id = name.split(NAMESEP, 2)[1];
 					}
@@ -523,21 +531,33 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 							kind = agentTree.get(DeploymentConfiguration.KIND_ATTRIBUTE_NAME);
 						else if (cat != null && cat.hasNameWithParts())
 							kind = agentTree.get(cat.nameParts()[0]);
-				}
+					}
+					if (id == null || id.length() == 0) {
+						// ------------------------------
+						if (agentCategoryTree22.isSimple(DeploymentConfiguration.NAME_ATTRIBUTE_NAME))
+							id = agentCategoryTree22.get(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
+						else if (cat != null && cat.hasNameWithParts())
+							id = agentCategoryTree22.get(cat.nameParts()[1]);
+						if (id == null)
+							id = name;
+					}
+					if (name != null && name.contains(NAMESEP) && id != null)
+						agentCategoryTree22.addFirst(DeploymentConfiguration.NAME_ATTRIBUTE_NAME, id);
+					// ------
 				List<Loader<?>> loaderList = null;
 				String log_catLoad = null, log_kindLoad = null;
 				int log_nLoader = 0;
 				if (loaders.containsKey(catName) && !loaders.get(catName).isEmpty()) {
-					// if the category in loader list
+
 					log_catLoad = catName;
-					if (loaders.get(catName).containsKey(kind)) { // get loaders for this kind
+					if (loaders.get(catName).containsKey(kind)) {
 						loaderList = loaders.get(catName).get(kind);
 						log_catLoad = kind;
-					} else { // if no loaders for this kind
-						if (loaders.get(catName).containsKey(null)) {// get the null kind
+					} else {
+						if (loaders.get(catName).containsKey(null)) {
 							loaderList = loaders.get(catName).get(null);
 							log_kindLoad = "null";
-						} else { // get loaders for the first kind
+						} else {
 							loaderList = loaders.get(catName).values().iterator().next();
 							log_kindLoad = "first (" + loaders.get(catName).keySet().iterator().next() + ")";
 						}
@@ -557,59 +577,114 @@ public class Node extends Unit implements Entity<Node>, NodeInterface, ClientApp
 						} else if (!contextItem.equals(null))
 							lw("Context item [] for [] []/[]/[] not found as a loaded entity.", contextItem, catName,
 									name, kind, null);
-
-				String local_id = agentTree.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE);
 				Entity<?> entity = null;
 				if (loaderList != null && !loaderList.isEmpty())
 					for (Loader<?> loader : loaderList) { // try loading
 						lf("Trying to load []/[] [][] using []th loader for [][]", name, local_id, catName, kind,
 								Integer.valueOf(log_nLoader), log_catLoad, log_kindLoad);
+
 						if (loader.preload(agentCategoryTree22, context))
 							entity = loader.load(agentCategoryTree22, context, null);
+
 						if (entity != null)
 							break;
 						log_nLoader += 1;
 					}
+				if (entity != null) {
+					li("Entity []/[] of type [] successfully loaded.", name, local_id, catName);
+//					agentTree.addSingleValue(DeploymentConfiguration.LOADED_ATTRIBUTE_NAME,
+//							DeploymentConfiguration.LOADED_ATTRIBUTE_NAME);
 
-			}
+					agentCategoryTree22.addSingleValue(DeploymentConfiguration.LOADED_ATTRIBUTE_NAME,
+							DeploymentConfiguration.LOADED_ATTRIBUTE_NAME);
 
-			// 5. Încarcă agentul
-
-			String kind = agentTree.getFirstValue(DeploymentConfiguration.KIND_ATTRIBUTE_NAME);
-			String name = agentTree.getFirstValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME);
-			String cp = Loader.autoFind(classFactory, packages, agentTree.get(SimpleLoader.CLASSPATH_KEY), kind, name,
-					CategoryName.AGENT.s(), new LinkedList<>());
-			String local_id = agentTree.getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE);
-			if (cp != null) {
-				agentTree.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
-			}
-
-			if (defaultLoader.preload(agentTree, null)) {
-				newAgent = defaultLoader.load(agentTree, null, null);
-			}
-
-
-			// 6. Înregistrează și pornește noul agent
-			if (newAgent != null) {
-				node.registerEntity(CategoryName.AGENT.s(), newAgent, newAgent.getName());
-//				this.loaded.put(this.getNodeConfiguration().getSingleValue(DeploymentConfiguration.LOCAL_ID_ATTRIBUTE),
-//						newAgent);
-				// this.loaded.put(this.getNodeConfiguration().getSingleValue(local_id), node);
-				node.registerEntity(CategoryName.AGENT.s(), newAgent, newAgent.getName());
-
-				if (!newAgent.isRunning()) {
-					if (newAgent.start()) {
-						li("New agent [" + newAgent.getName() + "] started successfully.");
-					} else {
-						le("Failed to start new agent [" + newAgent.getName() + "].");
-					}
+					loaded.put(local_id, entity);
+					node.registerEntity(catName, entity, id);
+				} else {
+					le("Could not load entity []/[] of type [].", name, local_id, catName);
 				}
-				li("Entity [" + newAgent.getName() + "] of type [" + CategoryName.AGENT.s()
-						+ "] successfully loaded and registered.");
-			} else {
-				le("Could not load agent from command: " + command);
+				if (entity == null) {
+					cp = Loader.autoFind(classFactory, packages, cp, kind, id, catName, checkedPaths);
+					if (cp == null)
+						le("Class for [] []/[]/[] can not be found; tried paths ", catName, name, kind, local_id,
+								checkedPaths);
+					else {
+						lf("Trying to load []/[] [][] using default loader [], from classpath []", name, local_id,
+								catName, kind, defaultLoader.getClass().getName(), cp);
+
+						agentCategoryTree22.addFirstValue(SimpleLoader.CLASSPATH_KEY, cp);
+					}
+					if (defaultLoader.preload(agentCategoryTree22, context))
+						entity = defaultLoader.load(agentCategoryTree22, context, null);
+
+				}
+				if (entity != null) {
+					li("Entity []/[] of type [] successfully loaded.", name, local_id, catName);
+//					agentTree.addSingleValue(DeploymentConfiguration.LOADED_ATTRIBUTE_NAME,
+//							DeploymentConfiguration.LOADED_ATTRIBUTE_NAME);\
+
+					agentCategoryTree22.addSingleValue(DeploymentConfiguration.LOADED_ATTRIBUTE_NAME,
+							DeploymentConfiguration.LOADED_ATTRIBUTE_NAME);
+
+					// find messaging pylons that can be used by the Node
+					EntityProxy<?> ctx = node.asContext();
+					if (ctx != null && ctx instanceof MessagingPylonProxy)
+						messagingProxies.add((MessagingPylonProxy) ctx);
+
+					loaded.put(local_id, entity);
+					node.registerEntity(catName, entity, id);
+					// this.addGeneralContext(ctx);
+				}
+
 			}
-			System.out.println(node.registeredEntities);
+			MultiTreeMap pylonTree = nodeConfiguration.getSingleTree("pylon");
+			pylonTree.addOneTreeGet("local:", agentCategoryTree22);
+			pylonTree.addOneTreeGet("agent", agentCategoryTree22);
+			// node.start();
+
+			// node.addGeneralContext(nodePylonProxy);
+			node.isRunning();
+			node.registerEntitiesToCentralEntity();
+
+			if (pylonTree != null) {
+				MultiTreeMap localPylonInstance = pylonTree.getFirstTree("local:");
+
+//					// pentru access pylon local
+//					if (localPylonInstance != null) {
+//						String pylonName = localPylonInstance.getSingleValue("name");
+//						String pylonClasspath = localPylonInstance.getSingleValue("classpath");
+				//
+//						System.out.println("Numele pylonului: " + pylonName);
+//						System.out.println("Classpath-ul pylonului: " + pylonClasspath);
+//					}
+			}
+			nodeConfiguration.addOneTree(CategoryName.AGENT.s(), agentCategoryTree);
+			
+			if (messagingProxies.stream().findFirst().isPresent()) {
+				MessagingPylonProxy pylon = messagingProxies.stream().findFirst().get();
+				node.addGeneralContext(pylon);
+
+				li("Node [] is central node.", node.getName());
+				CentralMonitoringAndControlEntity centralEntity = new CentralMonitoringAndControlEntity(
+						new MultiTreeMap()
+								.addSingleValue(DeploymentConfiguration.NAME_ATTRIBUTE_NAME,
+										DeploymentConfiguration.CENTRAL_MONITORING_ENTITY_NAME)
+								.addAll(DeploymentConfiguration.CENTRAL_NODE_KEY,
+										nodeConfiguration.getValues(DeploymentConfiguration.CENTRAL_NODE_KEY)));
+				centralEntity.addGeneralContext(pylon);
+				node.registerEntity(DeploymentConfiguration.MONITORING_TYPE, centralEntity,
+						DeploymentConfiguration.CENTRAL_MONITORING_ENTITY_NAME);
+
+				lf("Entity [] of type [] registered.", DeploymentConfiguration.CENTRAL_MONITORING_ENTITY_NAME,
+						DeploymentConfiguration.MONITORING_TYPE);
+
+				li("Loading node [] completed.", node.getName());
+
+				System.out.println(node.registeredEntities);
+			} else {
+
+				le("No Messaging Pylon found. Central entity cannot be created.");
+			}
 
 		}
 

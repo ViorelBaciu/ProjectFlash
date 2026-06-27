@@ -441,4 +441,19 @@ public class AgentWave extends AgentEvent {
 			ret[i + 1] = elements[i];
 		return ret;
 	}
+
+	public static String extractNodeName(String fullAgentAddress) {
+		if (fullAgentAddress == null || fullAgentAddress.trim().isEmpty()) {
+			return "";
+		}
+
+		int separatorIndex = fullAgentAddress.indexOf(':');
+
+		if (separatorIndex == -1) {
+			// Nu există ':' în adresă, deci e un agent local (fără nume de nod explicit).
+			return "";
+		}
+
+		return fullAgentAddress.substring(0, separatorIndex);
+	}
 }

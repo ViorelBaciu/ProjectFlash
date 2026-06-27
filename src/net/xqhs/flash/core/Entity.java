@@ -285,6 +285,8 @@ public interface Entity<P extends Entity<?>>
 		}
 	}
 
+
+
 //	boolean addGeneralContext(EntityProxy<? extends Entity<?>> context, MultiTreeMap agentConfiguration);
 //
 //	boolean addContext(EntityProxy<Pylon> context, MultiTreeMap agentConfiguration);

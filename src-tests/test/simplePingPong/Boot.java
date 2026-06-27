@@ -29,9 +29,22 @@ public class Boot
 		String test_args = "";
 		
 		test_args += " -package test.simplePingPong";
-		test_args += " -node main";
-		test_args += " -agent AgentA classpath:AgentPingPong sendTo:AgentB";
-		test_args += " -agent AgentB classpath:AgentPingPong";
+//		test_args += " -node main";
+//		test_args += " -agent AgentA classpath:AgentPingPong sendTo:AgentB";
+//		test_args += " -agent AgentB classpath:AgentPingPong";
+
+		test_args += " -node nodeA";
+		test_args += " -pylon rmi:rmi-pylon"; // Use a new pylon type for RMI
+		test_args += " serverPort:1099"; // Explicitly set the RMI port
+		test_args += " serverHost:localhost"; // Set the host (can be a specific IP)
+		test_args += " -agent AgentA1 classpath:AgentPingPong sendTo:AgentB1";
+
+		// Node B's configuration with RMI host/port
+		test_args += " -node nodeB";
+		test_args += " -pylon rmi:rmi-pylon"; // Use the same pylon type
+		test_args += " serverPort:1100"; // A different port for Node B
+		test_args += " serverHost:localhost";
+		test_args += " -agent AgentB1 classpath:AgentPingPong sendTo:AgentA1";
 		
 		FlashBoot.main(test_args.split(" "));
 	}
